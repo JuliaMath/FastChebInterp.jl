@@ -1,5 +1,7 @@
 # FastChebInterp
 
+[![Build Status](https://travis-ci.org/stevengj/FastChebInterp.jl.svg?branch=master)](https://travis-ci.org/stevengj/FastChebInterp.jl)
+
 Fast multidimensional Chebyshev interpolation on a hypercube (Cartesian-product)
 domain, using a separable (tensor-product) grid of Chebyshev interpolation points.
 
