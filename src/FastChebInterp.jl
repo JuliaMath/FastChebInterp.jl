@@ -81,9 +81,15 @@ function chebcoefs(vals::AbstractArray{<:Number,N}) where {N}
     return coefs
 end
 
-function chebcoefs(vals::AbstractArray{<:SVector{K},N}) where {N,K}
+function chebcoefs(vals::AbstractArray{<:SVector{K}}) where {K}
     coefs = ntuple(i -> chebcoefs([v[i] for v in vals]), Val{K}())
     return SVector{K}.(coefs...)
+end
+
+function chebcoefs(vals::AbstractArray{<:AbstractVector})
+    K, K′ = extrema(length, vals)
+    K == K′ || throw(ArgumentError("array elements must all be of the same length"))
+    return chebcoefs(SVector{K}.(vals))
 end
 
 function chebinterp(vals::AbstractArray{<:Any,N}, lb::SVector{N}, ub::SVector{N}) where {N}
@@ -104,6 +110,10 @@ object (a `ChebInterp`).
 This object `c = chebinterp(vals, lb, ub)` can be used to
 evaluate the interpolating polynomial at a point `x` via
 `c(x)`.
+
+The elements of `vals` can be vectors as well as numbers, in order
+to interpolate vector-valued functions (i.e. to interpolate several
+functions at once).
 """
 chebinterp(vals::AbstractArray{<:Any,N}, lb, ub) where {N} =
     chebinterp(vals, SVector{N}(lb), SVector{N}(ub))
