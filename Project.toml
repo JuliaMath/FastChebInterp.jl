@@ -1,0 +1,18 @@
+name = "FastChebInterp"
+uuid = "cf66c380-9a80-432c-aff8-4f9c79c0bdde"
+version = "0.1.0"
+
+[deps]
+FFTW = "7a1cc6ca-52ef-59f5-83cd-3a7055c09341"
+StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
+
+[compat]
+FFTW = "1.0"
+StaticArrays = "0.12"
+julia = "1.0"
+
+[extras]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Test"]
