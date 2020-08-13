@@ -155,7 +155,7 @@ end
 """
     (interp::ChebInterp)(x)
 
-valuate the Chebyshev polynomial given by `interp` at the point `x`.
+Evaluate the Chebyshev polynomial given by `interp` at the point `x`.
 """
 function (interp::ChebInterp{N})(x::SVector{N,<:Real}) where {N}
     x0 = @. (x - interp.lb) * 2 / (interp.ub - interp.lb) - 1
