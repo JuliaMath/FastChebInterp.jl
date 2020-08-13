@@ -8,4 +8,9 @@ using Test, FastChebInterp
     @test ndims(interp) == 2
     x1 = [0.2, 0.3]
     @test interp(x1) ≈ f(x1)
+
+    # complex and SVector-valued interpolants:
+    f2(x) = SVector(f(x), cis(x[1]*x[2] + 2x[2]))
+    interp2 = chebinterp(f2.(x), lb, ub)
+    @test interp2(x1) ≈ f2(x1)
 end

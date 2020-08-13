@@ -81,6 +81,11 @@ function chebcoefs(vals::AbstractArray{<:Number,N}) where {N}
     return coefs
 end
 
+function chebcoefs(vals::AbstractArray{<:SVector{K},N}) where {N,K}
+    coefs = ntuple(i -> chebcoefs([v[i] for v in vals]), Val{K}())
+    return SVector{K}.(coefs...)
+end
+
 function chebinterp(vals::AbstractArray{<:Any,N}, lb::SVector{N}, ub::SVector{N}) where {N}
     Td = promote_type(eltype(lb), eltype(ub))
     coefs = chebcoefs(vals)
