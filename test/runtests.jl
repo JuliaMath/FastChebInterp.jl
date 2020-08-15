@@ -8,7 +8,7 @@ using Test, FastChebInterp, StaticArrays
     f(x) = exp(x) / (1 + 2x^2)
     f′(x) = f(x) * (1 - 4x/(1 + 2x^2))
     x = chebpoints(48, lb, ub)
-    interp = chebinterp(f.(x), lb, ub)
+    interp = chebfit(f.(x), lb, ub)
     @test ndims(interp) == 1
     x1 = 0.2
     @test interp(x1) ≈ f(x1)
@@ -20,7 +20,7 @@ end
     f(x) = exp(x[1]+2*x[2]) / (1 + 2x[1]^2 + x[2]^2)
     ∇f(x) = f(x) * SVector(1 - 4x[1]/(1 + 2x[1]^2 + x[2]^2), 2 - 2x[2]/(1 + 2x[1]^2 + x[2]^2))
     x = chebpoints((48,39), lb, ub)
-    interp = chebinterp(f.(x), lb, ub)
+    interp = chebfit(f.(x), lb, ub)
     @test ndims(interp) == 2
     x1 = [0.2, 0.3]
     @test interp(x1) ≈ f(x1)
@@ -29,7 +29,7 @@ end
     # complex and vector-valued interpolants:
     f2(x) = [f(x), cis(x[1]*x[2] + 2x[2])]
     ∇f2(x) = vcat(transpose(∇f(x)), transpose(SVector(im*x[2], im*(x[1] + 2)) * cis(x[1]*x[2] + 2x[2])))
-    interp2 = chebinterp(f2.(x), lb, ub)
+    interp2 = chebfit(f2.(x), lb, ub)
     @test interp2(x1) ≈ f2(x1)
     @test chebjacobian(interp2, x1) ≈′ (f2(x1), ∇f2(x1))
 end

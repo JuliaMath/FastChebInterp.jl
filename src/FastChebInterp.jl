@@ -7,7 +7,7 @@ tuple, you would create an interpolator for a function `f` via:
 ```
 using FastChebInterp
 x = chebpoints(order, lb, ub) # an array of StaticVector
-c = chebinterp(f.(x), lb, ub)
+c = chebfit(f.(x), lb, ub)
 ```
 and then evaluate the interpolant for a point `y` (a vector)
 via `c(y)`.
@@ -22,7 +22,7 @@ to compute the tuple `(c(y), J(y))` of the interpolant and its Jacobian matrix a
 """
 module FastChebInterp
 
-export chebpoints, chebinterp, chebjacobian, chebgradient
+export chebpoints, chebfit, chebjacobian, chebgradient
 
 using StaticArrays
 import FFTW
@@ -64,7 +64,7 @@ and hypercube lower-and upper-bound vectors `lb` and `ub`.
 If `ub` and `lb` are numbers, returns an array of numbers.
 
 These are the points where you should evaluate a function
-in order to create a Chebyshev interpolant with `chebinterp`.
+in order to create a Chebyshev interpolant with `chebfit`.
 
 (Note that the number of points along each dimension is `1 +`
 the order in that direction.)
@@ -108,14 +108,14 @@ function chebcoefs(vals::AbstractArray{<:AbstractVector})
     return chebcoefs(SVector{K}.(vals))
 end
 
-function chebinterp(vals::AbstractArray{<:Any,N}, lb::SVector{N}, ub::SVector{N}) where {N}
+function chebfit(vals::AbstractArray{<:Any,N}, lb::SVector{N}, ub::SVector{N}) where {N}
     Td = promote_type(eltype(lb), eltype(ub))
     coefs = chebcoefs(vals)
     return ChebInterp{N,eltype(coefs),Td}(coefs, SVector{N,Td}(lb), SVector{N,Td}(ub))
 end
 
 """
-    chebinterp(vals, lb, ub)
+    chebfit(vals, lb, ub)
 
 Given a multidimensional array `vals` of function values (at
 points corresponding to the coordinates returned by `chebpoints`),
@@ -123,7 +123,7 @@ and arrays `lb` and `ub` of the lower and upper coordinate bounds
 of the domain in each direction, returns a Chebyshev interpolation
 object (a `ChebInterp`).
 
-This object `c = chebinterp(vals, lb, ub)` can be used to
+This object `c = chebfit(vals, lb, ub)` can be used to
 evaluate the interpolating polynomial at a point `x` via
 `c(x)`.
 
@@ -131,8 +131,8 @@ The elements of `vals` can be vectors as well as numbers, in order
 to interpolate vector-valued functions (i.e. to interpolate several
 functions at once).
 """
-chebinterp(vals::AbstractArray{<:Any,N}, lb, ub) where {N} =
-    chebinterp(vals, SVector{N}(lb), SVector{N}(ub))
+chebfit(vals::AbstractArray{<:Any,N}, lb, ub) where {N} =
+    chebfit(vals, SVector{N}(lb), SVector{N}(ub))
 
 """
     interpolate(x, c::Array{T,N}, ::Val{dim}, i1, len)
