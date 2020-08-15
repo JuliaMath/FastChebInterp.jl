@@ -126,46 +126,52 @@ chebinterp(vals::AbstractArray{<:Any,N}, lb, ub) where {N} =
     chebinterp(vals, SVector{N}(lb), SVector{N}(ub))
 
 """
+    interpolate(x, c::Array{T,N}, ::Val{dim}, i1, len)
+
 Low-level interpolation function, which performs a
 multidimensional Clenshaw recurrence by recursing on
-the coefficient (`c`) array dimension `dim`.   The
+the coefficient (`c`) array dimension `dim` (from `N` to `1`).   The
 current dimension (via column-major order) is accessed
 by `c[i1 + (i-1)*Δi]`, i.e. `i1` is the starting index and
-`Δi` is the stride.   The interpolation point `x`
+`Δi = len ÷ size(c,dim)` is the stride.   `len` is the
+product of `size(c)[1:dim]`. The interpolation point `x`
 should lie within [-1,+1] in each coordinate.
 """
-function interpolate(x::SVector{N}, c::Array{<:Any,N}, ::Val{dim}, i1, Δi) where {N,dim}
+function interpolate(x::SVector{N}, c::Array{<:Any,N}, ::Val{dim}, i1, len) where {N,dim}
     n = size(c,dim)
     xd = x[dim]
-    if dim == N
+    if dim == 1
         c₁ = c[i1]
         if n ≤ 2
             n == 1 && return c₁ + xd * zero(c₁)
-            return c₁ + xd*c[i1+Δi]
+            return c₁ + xd*c[i1]
         end
-        bₖ = c[i1+(n-2)*Δi] + 2xd*c[i1+(n-1)*Δi]
-        bₖ₊₁ = oftype(bₖ, c[i1+(n-1)*Δi])
+        bₖ = c[i1+(n-2)] + 2xd*c[i1+(n-1)]
+        bₖ₊₁ = oftype(bₖ, c[i1+(n-1)])
         for j = n-3:-1:1
-            bⱼ = c[i1+j*Δi] + 2xd*bₖ - bₖ₊₁
+            bⱼ = c[i1+j] + 2xd*bₖ - bₖ₊₁
             bₖ, bₖ₊₁ = bⱼ, bₖ
         end
         return c₁ + xd*bₖ - bₖ₊₁
     else
-        dim′ = Val{dim+1}()
-        Δi′ = Δi*n # column-major stride of next dimension
+        Δi = len ÷ n # column-major stride of current dimension
 
-        c₁ = interpolate(x, c, dim′, i1, Δi′)
+        # we recurse downward on dim for cache locality,
+        # since earlier dimensions are contiguous
+        dim′ = Val{dim-1}()
+
+        c₁ = interpolate(x, c, dim′, i1, Δi)
         if n ≤ 2
             n == 1 && return c₁ + xd * zero(c₁)
-            c₂ = interpolate(x, c, dim′, i1+Δi, Δi′)
+            c₂ = interpolate(x, c, dim′, i1+Δi, Δi)
             return c₁ + xd*c₂
         end
-        cₙ₋₁ = interpolate(x, c, dim′, i1+(n-2)*Δi, Δi′)
-        cₙ = interpolate(x, c, dim′, i1+(n-1)*Δi, Δi′)
+        cₙ₋₁ = interpolate(x, c, dim′, i1+(n-2)*Δi, Δi)
+        cₙ = interpolate(x, c, dim′, i1+(n-1)*Δi, Δi)
         bₖ = cₙ₋₁ + 2xd*cₙ
         bₖ₊₁ = oftype(bₖ, cₙ)
         for j = n-3:-1:1
-            cⱼ = interpolate(x, c, dim′, i1+j*Δi, Δi′)
+            cⱼ = interpolate(x, c, dim′, i1+j*Δi, Δi)
             bⱼ = cⱼ + 2xd*bₖ - bₖ₊₁
             bₖ, bₖ₊₁ = bⱼ, bₖ
         end
@@ -181,7 +187,7 @@ Evaluate the Chebyshev polynomial given by `interp` at the point `x`.
 function (interp::ChebInterp{N})(x::SVector{N,<:Real}) where {N}
     x0 = @. (x - interp.lb) * 2 / (interp.ub - interp.lb) - 1
     all(abs.(x0) .≤ 1) || throw(ArgumentError("$x not in domain"))
-    return interpolate(x0, interp.coefs, Val{1}(), 1, 1)
+    return interpolate(x0, interp.coefs, Val{N}(), 1, prod(size(interp.coefs)))
 end
 
 (interp::ChebInterp{N})(x::AbstractVector{<:Real}) where {N} = interp(SVector{N}(x))
