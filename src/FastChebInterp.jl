@@ -139,17 +139,17 @@ should lie within [-1,+1] in each coordinate.
 """
 function interpolate(x::SVector{N}, c::Array{<:Any,N}, ::Val{dim}, i1, len) where {N,dim}
     n = size(c,dim)
-    xd = x[dim]
+    @inbounds xd = x[dim]
     if dim == 1
         c₁ = c[i1]
         if n ≤ 2
             n == 1 && return c₁ + xd * zero(c₁)
             return c₁ + xd*c[i1]
         end
-        bₖ = c[i1+(n-2)] + 2xd*c[i1+(n-1)]
-        bₖ₊₁ = oftype(bₖ, c[i1+(n-1)])
+        @inbounds bₖ = c[i1+(n-2)] + 2xd*c[i1+(n-1)]
+        @inbounds bₖ₊₁ = oftype(bₖ, c[i1+(n-1)])
         for j = n-3:-1:1
-            bⱼ = c[i1+j] + 2xd*bₖ - bₖ₊₁
+            @inbounds bⱼ = c[i1+j] + 2xd*bₖ - bₖ₊₁
             bₖ, bₖ₊₁ = bⱼ, bₖ
         end
         return c₁ + xd*bₖ - bₖ₊₁
