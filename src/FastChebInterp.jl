@@ -82,6 +82,9 @@ function chebcoefs(vals::AbstractArray{<:Number,N}) where {N}
 end
 
 function chebcoefs(vals::AbstractArray{<:SVector{K}}) where {K}
+    # TODO: in principle we could call FFTW's low-level interface
+    # to perform all the transforms simultaneously, rather than
+    # transforming each component separately.
     coefs = ntuple(i -> chebcoefs([v[i] for v in vals]), Val{K}())
     return SVector{K}.(coefs...)
 end
