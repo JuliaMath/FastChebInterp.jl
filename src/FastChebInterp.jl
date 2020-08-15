@@ -130,43 +130,42 @@ Low-level interpolation function, which performs a
 multidimensional Clenshaw recurrence by recursing on
 the coefficient (`c`) array dimension `dim`.   The
 current dimension (via column-major order) is accessed
-by `c[i0 + i*Δi]`, i.e. `i0` is the starting index and
+by `c[i1 + (i-1)*Δi]`, i.e. `i1` is the starting index and
 `Δi` is the stride.   The interpolation point `x`
 should lie within [-1,+1] in each coordinate.
 """
-function interpolate(x::SVector{N}, c::Array{<:Any,N}, ::Val{dim}, i0, Δi) where {N,dim}
+function interpolate(x::SVector{N}, c::Array{<:Any,N}, ::Val{dim}, i1, Δi) where {N,dim}
     n = size(c,dim)
     xd = x[dim]
     if dim == N
-        c₁ = c[i0+Δi]
+        c₁ = c[i1]
         if n ≤ 2
             n == 1 && return c₁ + xd * zero(c₁)
-            return c₁ + xd*c[i0+2Δi]
+            return c₁ + xd*c[i1+Δi]
         end
-        bₖ = c[i0+(n-1)*Δi] + 2xd*c[i0+n*Δi]
-        bₖ₊₁ = oftype(bₖ, c[i0+n*Δi])
-        for j = n-2:-1:2
-            bⱼ = c[i0+j*Δi] + 2xd*bₖ - bₖ₊₁
+        bₖ = c[i1+(n-2)*Δi] + 2xd*c[i1+(n-1)*Δi]
+        bₖ₊₁ = oftype(bₖ, c[i1+(n-1)*Δi])
+        for j = n-3:-1:1
+            bⱼ = c[i1+j*Δi] + 2xd*bₖ - bₖ₊₁
             bₖ, bₖ₊₁ = bⱼ, bₖ
         end
         return c₁ + xd*bₖ - bₖ₊₁
     else
         dim′ = Val{dim+1}()
         Δi′ = Δi*n # column-major stride of next dimension
-        i0 -= Δi′  # adjustment for 1-based indexing
 
-        c₁ = interpolate(x, c, dim′, i0+Δi, Δi′)
+        c₁ = interpolate(x, c, dim′, i1, Δi′)
         if n ≤ 2
             n == 1 && return c₁ + xd * zero(c₁)
-            c₂ = interpolate(x, c, dim′, i0+2Δi, Δi′)
+            c₂ = interpolate(x, c, dim′, i1+Δi, Δi′)
             return c₁ + xd*c₂
         end
-        cₙ₋₁ = interpolate(x, c, dim′, i0+(n-1)*Δi, Δi′)
-        cₙ = interpolate(x, c, dim′, i0+n*Δi, Δi′)
+        cₙ₋₁ = interpolate(x, c, dim′, i1+(n-2)*Δi, Δi′)
+        cₙ = interpolate(x, c, dim′, i1+(n-1)*Δi, Δi′)
         bₖ = cₙ₋₁ + 2xd*cₙ
         bₖ₊₁ = oftype(bₖ, cₙ)
-        for j = n-2:-1:2
-            cⱼ = interpolate(x, c, dim′, i0+j*Δi, Δi′)
+        for j = n-3:-1:1
+            cⱼ = interpolate(x, c, dim′, i1+j*Δi, Δi′)
             bⱼ = cⱼ + 2xd*bₖ - bₖ₊₁
             bₖ, bₖ₊₁ = bⱼ, bₖ
         end
@@ -182,7 +181,7 @@ Evaluate the Chebyshev polynomial given by `interp` at the point `x`.
 function (interp::ChebInterp{N})(x::SVector{N,<:Real}) where {N}
     x0 = @. (x - interp.lb) * 2 / (interp.ub - interp.lb) - 1
     all(abs.(x0) .≤ 1) || throw(ArgumentError("$x not in domain"))
-    return interpolate(x0, interp.coefs, Val{1}(), 0, 1)
+    return interpolate(x0, interp.coefs, Val{1}(), 1, 1)
 end
 
 (interp::ChebInterp{N})(x::AbstractVector{<:Real}) where {N} = interp(SVector{N}(x))
