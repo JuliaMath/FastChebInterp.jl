@@ -28,26 +28,26 @@ using StaticArrays
 import FFTW
 
 """
-    ChebInterp
+    ChebPoly
 
 A multidimensional Chebyshev-polynomial interpolation object.
-Given a `c::ChebInterp`, you can evaluate it at a point `x`
+Given a `c::ChebPoly`, you can evaluate it at a point `x`
 with `c(x)`, where `x` is a vector (or a scalar if `c` is 1d).
 """
-struct ChebInterp{N,T,Td<:Real}
+struct ChebPoly{N,T,Td<:Real}
     coefs::Array{T,N} # chebyshev coefficients
     lb::SVector{N,Td} # lower/upper bounds
     ub::SVector{N,Td} #    of the domain
 end
 
-function Base.show(io::IO, c::ChebInterp)
+function Base.show(io::IO, c::ChebPoly)
     print(io, "Chebyshev order ", map(i->i-1,size(c.coefs)), " interpolator on ",
           '[', c.lb[1], ',', c.ub[1], ']')
     for i = 2:length(c.lb)
         print(io, " × [", c.lb[1], ',', c.ub[1], ']')
     end
 end
-Base.ndims(c::ChebInterp) = ndims(c.coefs)
+Base.ndims(c::ChebPoly) = ndims(c.coefs)
 
 chebpoint(i::CartesianIndex{N}, order::NTuple{N,Int}, lb::SVector{N}, ub::SVector{N}) where {N} =
     @. lb + (1 + cos($SVector($Tuple(i)) * π / $SVector(order))) * (ub - lb) * 0.5
@@ -111,7 +111,7 @@ end
 function chebfit(vals::AbstractArray{<:Any,N}, lb::SVector{N}, ub::SVector{N}) where {N}
     Td = promote_type(eltype(lb), eltype(ub))
     coefs = chebcoefs(vals)
-    return ChebInterp{N,eltype(coefs),Td}(coefs, SVector{N,Td}(lb), SVector{N,Td}(ub))
+    return ChebPoly{N,eltype(coefs),Td}(coefs, SVector{N,Td}(lb), SVector{N,Td}(ub))
 end
 
 """
@@ -121,7 +121,7 @@ Given a multidimensional array `vals` of function values (at
 points corresponding to the coordinates returned by `chebpoints`),
 and arrays `lb` and `ub` of the lower and upper coordinate bounds
 of the domain in each direction, returns a Chebyshev interpolation
-object (a `ChebInterp`).
+object (a `ChebPoly`).
 
 This object `c = chebfit(vals, lb, ub)` can be used to
 evaluate the interpolating polynomial at a point `x` via
@@ -189,18 +189,18 @@ function interpolate(x::SVector{N}, c::Array{<:Any,N}, ::Val{dim}, i1, len) wher
 end
 
 """
-    (interp::ChebInterp)(x)
+    (interp::ChebPoly)(x)
 
 Evaluate the Chebyshev polynomial given by `interp` at the point `x`.
 """
-function (interp::ChebInterp{N})(x::SVector{N,<:Real}) where {N}
+function (interp::ChebPoly{N})(x::SVector{N,<:Real}) where {N}
     x0 = @. (x - interp.lb) * 2 / (interp.ub - interp.lb) - 1
     all(abs.(x0) .≤ 1) || throw(ArgumentError("$x not in domain"))
     return interpolate(x0, interp.coefs, Val{N}(), 1, length(interp.coefs))
 end
 
-(interp::ChebInterp{N})(x::AbstractVector{<:Real}) where {N} = interp(SVector{N}(x))
-(interp::ChebInterp{1})(x::Real) = interp(SVector{1}(x))
+(interp::ChebPoly{N})(x::AbstractVector{<:Real}) where {N} = interp(SVector{N}(x))
+(interp::ChebPoly{1})(x::Real) = interp(SVector{1}(x))
 
 
 """
@@ -266,7 +266,7 @@ end
 
 
 """
-    chebjacobian(c::ChebInterp, x)
+    chebjacobian(c::ChebPoly, x)
 
 Return a tuple `(v, J)` where `v` is the value `c(x)` of the Chebyshev
 polynomial `c` at `x`, and `J` is the Jacobian of this value with respect to `x`.
@@ -275,18 +275,18 @@ That is, if `v` is a vector, then `J` is a matrix of `length(v)` × `length(x)`
 giving the derivatives of each component.  If `v` is a scalar, then `J`
 is a 1-row matrix; in this case you may wish to call `chebgradient` instead.
 """
-function chebjacobian(c::ChebInterp{N}, x::SVector{N,<:Real}) where {N}
+function chebjacobian(c::ChebPoly{N}, x::SVector{N,<:Real}) where {N}
     x0 = @. (x - c.lb) * 2 / (c.ub - c.lb) - 1
     all(abs.(x0) .≤ 1) || throw(ArgumentError("$x not in domain"))
     v, J = Jinterpolate(x0, c.coefs, Val{N}(), 1, length(c.coefs))
     return v, J .* 2 ./ (c.ub .- c.lb)'
 end
 
-chebjacobian(c::ChebInterp{N}, x::AbstractVector{<:Real}) where {N} = chebjacobian(c, SVector{N}(x))
-chebjacobian(c::ChebInterp{1}, x::Real) = chebjacobian(c, SVector{1}(x))
+chebjacobian(c::ChebPoly{N}, x::AbstractVector{<:Real}) where {N} = chebjacobian(c, SVector{N}(x))
+chebjacobian(c::ChebPoly{1}, x::Real) = chebjacobian(c, SVector{1}(x))
 
 """
-    chebgradient(c::ChebInterp, x)
+    chebgradient(c::ChebPoly, x)
 
 Return a tuple `(v, ∇v)` where `v` is the value `c(x)` of the Chebyshev
 polynomial `c` at `x`, and `∇v` is the gradient of this value with respect to `x`.
@@ -296,13 +296,13 @@ should use `chebjacobian` instead.)
 
 If `x` is a scalar, returns a scalar `∇v`, i.e. `(v, ∂v/∂x).
 """
-function chebgradient(c::ChebInterp, x)
+function chebgradient(c::ChebPoly, x)
     v, J = chebjacobian(c, x)
     length(v) == 1 || throw(DimensionMismatch())
     return v, vec(J)
 end
 
-function chebgradient(c::ChebInterp{1}, x::Real)
+function chebgradient(c::ChebPoly{1}, x::Real)
     v, ∇v = chebgradient(c, SVector{1}(x))
     return v, ∇v[1]
 end
