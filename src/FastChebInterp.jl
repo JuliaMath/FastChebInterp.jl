@@ -187,7 +187,7 @@ Evaluate the Chebyshev polynomial given by `interp` at the point `x`.
 function (interp::ChebInterp{N})(x::SVector{N,<:Real}) where {N}
     x0 = @. (x - interp.lb) * 2 / (interp.ub - interp.lb) - 1
     all(abs.(x0) .≤ 1) || throw(ArgumentError("$x not in domain"))
-    return interpolate(x0, interp.coefs, Val{N}(), 1, prod(size(interp.coefs)))
+    return interpolate(x0, interp.coefs, Val{N}(), 1, length(interp.coefs))
 end
 
 (interp::ChebInterp{N})(x::AbstractVector{<:Real}) where {N} = interp(SVector{N}(x))
