@@ -52,7 +52,7 @@ chebpoints(order::NTuple{N,Int}, lb::SVector{N}, ub::SVector{N}) where {N} =
 
 Return an array of Chebyshev points (as `SVector` values) for
 the given `order` (an array or tuple of polynomial degrees),
-and hypercube lower-and upper-bound arrays `lb` and `ub`.
+and hypercube lower-and upper-bound vectors `lb` and `ub`.
 If `ub` and `lb` are numbers, returns an array of numbers.
 
 These are the points where you should evaluate a function
