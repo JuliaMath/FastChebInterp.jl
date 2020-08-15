@@ -67,6 +67,7 @@ function chebpoints(order, lb, ub)
     return chebpoints(NTuple{N,Int}(order), SVector{N}(lb), SVector{N}(ub))
 end
 
+# return array of scalars in 1d
 chebpoints(order::Integer, lb::Real, ub::Real) =
     first.(chebpoints(order, SVector(lb), SVector(ub)))
 
