@@ -15,4 +15,11 @@ c = chebinterp(f.(x), lb, ub)
 and then evaluate the interpolant for a point `y` (a vector)
 via `c(y)`.
 
+We also provide a function `chebgradient(c,y)` that returns a tuple `(c(y), ∇c(y))` of
+the interpolant and its gradient at a point `y`.
+
+The FastChebInterp package also supports complex and vector-valued functions `f`.  In
+this case, `c(y)` returns a vector of interpolants, and one can use `chebjacobian(c,y)`
+to compute the tuple `(c(y), J(y))` of the interpolant and its Jacobian matrix at `y`.
+
 This package is an experimental replacement for some of the functionality in [ChebyshevApprox.jl](https://github.com/RJDennis/ChebyshevApprox.jl) in order to get more performance.  The [ApproxFun.jl](https://github.com/JuliaApproximation/ApproxFun.jl) package also performs Chebyshev interpolation and many other tasks.
