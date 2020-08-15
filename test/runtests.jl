@@ -1,5 +1,15 @@
 using Test, FastChebInterp
 
+@testset "1d test" begin
+    lb,ub = -0.3, 0.9
+    f(x) = exp(x) / (1 + 2x^2)
+    x = chebpoints(48, lb, ub)
+    interp = chebinterp(f.(x), lb, ub)
+    @test ndims(interp) == 1
+    x1 = 0.2
+    @test interp(x1) ≈ f(x1)
+end
+
 @testset "2d test" begin
     lb, ub = [-0.3,0.1], [0.9,1.2]
     f(x) = exp(x[1]+2*x[2]) / (1 + 2x[1]^2 + x[2]^2)

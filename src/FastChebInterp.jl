@@ -53,6 +53,7 @@ chebpoints(order::NTuple{N,Int}, lb::SVector{N}, ub::SVector{N}) where {N} =
 Return an array of Chebyshev points (as `SVector` values) for
 the given `order` (an array or tuple of polynomial degrees),
 and hypercube lower-and upper-bound arrays `lb` and `ub`.
+If `ub` and `lb` are numbers, returns an array of numbers.
 
 These are the points where you should evaluate a function
 in order to create a Chebyshev interpolant with `chebinterp`.
@@ -65,6 +66,9 @@ function chebpoints(order, lb, ub)
     N == length(lb) == length(ub) || throw(DimensionMismatch())
     return chebpoints(NTuple{N,Int}(order), SVector{N}(lb), SVector{N}(ub))
 end
+
+chebpoints(order::Integer, lb::Real, ub::Real) =
+    first.(chebpoints(order, SVector(lb), SVector(ub)))
 
 # O(n log n) method to compute Chebyshev coefficients
 function chebcoefs(vals::AbstractArray{<:Number,N}) where {N}
