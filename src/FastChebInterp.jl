@@ -108,14 +108,39 @@ function chebcoefs(vals::AbstractArray{<:AbstractVector})
     return chebcoefs(SVector{K}.(vals))
 end
 
-function chebfit(vals::AbstractArray{<:Any,N}, lb::SVector{N}, ub::SVector{N}) where {N}
+# norm for tolerance tests of chebyshev coefficients
+infnorm(x::Number) = abs(x)
+infnorm(x::AbstractArray) = maximum(abs, x)
+
+function droptol(coefs::Array{<:Any,N}, tol::Real) where {N}
+    abstol = maximum(infnorm, coefs) * tol # absolute tolerance
+    all(c -> infnorm(c) ≥ abstol, coefs) && return coefs # nothing to drop
+
+    # compute the new size along each dimension by checking
+    # the maximum index that cannot be dropped along each dim
+    newsize = ntuple(Val{N}()) do dim
+        n = size(coefs, dim)
+        while n > 1
+            r = ntuple(i -> i == dim ? (n:n) : (1:size(coefs,i)), Val{N}())
+            any(c -> infnorm(c) ≥ abstol, @view coefs[CartesianIndices(r)]) && break
+            n -= 1
+        end
+        n
+    end
+    return coefs[CartesianIndices(map(n -> 1:n, newsize))]
+end
+
+function chebfit(vals::AbstractArray{<:Any,N}, lb::SVector{N}, ub::SVector{N}; tol::Real=epsvals(vals)) where {N}
     Td = promote_type(eltype(lb), eltype(ub))
-    coefs = chebcoefs(vals)
+    coefs = droptol(chebcoefs(vals), tol)
     return ChebPoly{N,eltype(coefs),Td}(coefs, SVector{N,Td}(lb), SVector{N,Td}(ub))
 end
 
+# precision for float(vals), handling arrays of numbers and arrays of arrays of numbers
+epsvals(vals) = eps(float(real(eltype(eltype(vals)))))
+
 """
-    chebfit(vals, lb, ub)
+    chebfit(vals, lb, ub; tol=eps)
 
 Given a multidimensional array `vals` of function values (at
 points corresponding to the coordinates returned by `chebpoints`),
@@ -130,9 +155,14 @@ evaluate the interpolating polynomial at a point `x` via
 The elements of `vals` can be vectors as well as numbers, in order
 to interpolate vector-valued functions (i.e. to interpolate several
 functions at once).
+
+The `tol` argument specifies a relative tolerance below which
+Chebyshev coefficients are dropped; it defaults to machine precision
+for the precision of `float(vals)`.   Passing `tol=0` will keep
+all coefficients up to the order passed to `chebpoints`.
 """
-chebfit(vals::AbstractArray{<:Any,N}, lb, ub) where {N} =
-    chebfit(vals, SVector{N}(lb), SVector{N}(ub))
+chebfit(vals::AbstractArray{<:Any,N}, lb, ub; tol::Real=epsvals(vals)) where {N} =
+    chebfit(vals, SVector{N}(lb), SVector{N}(ub); tol=tol)
 
 """
     interpolate(x, c::Array{T,N}, ::Val{dim}, i1, len)
