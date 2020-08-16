@@ -44,7 +44,7 @@ function Base.show(io::IO, c::ChebPoly)
     print(io, "Chebyshev order ", map(i->i-1,size(c.coefs)), " interpolator on ",
           '[', c.lb[1], ',', c.ub[1], ']')
     for i = 2:length(c.lb)
-        print(io, " × [", c.lb[1], ',', c.ub[1], ']')
+        print(io, " × [", c.lb[i], ',', c.ub[i], ']')
     end
 end
 Base.ndims(c::ChebPoly) = ndims(c.coefs)
