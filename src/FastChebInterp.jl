@@ -171,7 +171,7 @@ Like `chebfit(vals, lb, ub)`, but slices off the *first* dimension of `vals`
 and treats it as a vector of values to interpolate.
 
 For example, if `vals` is a 2×31×32 array of numbers, then it is treated
-equivalent to calling `chebfit` with a 31×32 array of 2-component numbers.
+equivalently to calling `chebfit` with a 31×32 array of 2-component vectors.
 
 (This function is mainly useful for calling from Python, where arrays
 of vectors are painful to construct.)
