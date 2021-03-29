@@ -22,7 +22,7 @@ to compute the tuple `(c(y), J(y))` of the interpolant and its Jacobian matrix a
 """
 module FastChebInterp
 
-export chebpoints, chebfit, chebjacobian, chebgradient
+export chebpoints, chebfit, chebfitv1, chebjacobian, chebgradient
 
 using StaticArrays
 import FFTW
@@ -163,6 +163,21 @@ all coefficients up to the order passed to `chebpoints`.
 """
 chebfit(vals::AbstractArray{<:Any,N}, lb, ub; tol::Real=epsvals(vals)) where {N} =
     chebfit(vals, SVector{N}(lb), SVector{N}(ub); tol=tol)
+
+"""
+    chebfitv1(vals, lb, ub; tol=eps)
+
+Like `chebfit(vals, lb, ub)`, but slices off the *first* dimension of `vals`
+and treats it as a vector of values to interpolate.
+
+For example, if `vals` is a 2×31×32 array of numbers, then it is treated
+equivalent to calling `chebfit` with a 31×32 array of 2-component numbers.
+
+(This function is mainly useful for calling from Python, where arrays
+of vectors are painful to construct.)
+"""
+chebfitv1(vals::AbstractArray{T}, lb, ub; tol::Real=epsvals(vals)) where {T<:Number} =
+    chebfit(dropdims(reinterpret(SVector{size(vals,1),T}, Array(vals)), dims=1), lb, ub; tol=tol)
 
 """
     interpolate(x, c::Array{T,N}, ::Val{dim}, i1, len)

@@ -41,4 +41,12 @@ end
     interp2 = chebfit(f2.(x), lb, ub)
     @test interp2(x1) ≈ f2(x1)
     @test chebjacobian(interp2, x1) ≈′ (f2(x1), ∇f2(x1))
+
+    # chebfitv1
+    av1 = Array{ComplexF64}(undef, 2, size(x)...)
+    av1[1,:,:] .= f.(x)
+    av1[2,:,:] .= (x -> f2(x)[2]).(x)
+    interp2v1 = chebfitv1(av1, lb, ub)
+    @test interp2v1(x1) ≈ f2(x1)
+    @test chebjacobian(interp2v1, x1) ≈′ (f2(x1), ∇f2(x1))
 end
