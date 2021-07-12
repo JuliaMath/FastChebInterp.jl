@@ -22,4 +22,10 @@ The FastChebInterp package also supports complex and vector-valued functions `f`
 this case, `c(y)` returns a vector of interpolants, and one can use `chebjacobian(c,y)`
 to compute the tuple `(c(y), J(y))` of the interpolant and its Jacobian matrix at `y`.
 
+We also have a function `chebregression(x, y, [lb, ub,], order)` that
+can perform multidimensional Chebyshev least-square fitting.  It
+returns a Chebyshev polynomial of a given `order` (tuple) fit
+to a set of points `x[i]` and values `y[i]`, optionally in a box
+with bounds `lb, ub` (which default to bounding box for `x`).
+
 This package is an experimental replacement for some of the functionality in [ChebyshevApprox.jl](https://github.com/RJDennis/ChebyshevApprox.jl) in order to get more performance.  The [ApproxFun.jl](https://github.com/JuliaApproximation/ApproxFun.jl) package also performs Chebyshev interpolation and many other tasks.

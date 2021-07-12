@@ -50,3 +50,36 @@ end
     @test interp2v1(x1) ≈ f2(x1)
     @test chebjacobian(interp2v1, x1) ≈′ (f2(x1), ∇f2(x1))
 end
+
+@testset "1d regression" begin
+    x = range(1,2, length=200)
+    y = @. sin.(x + 0.2) * x
+    c = chebregression(x, y, 2)
+    c2 = x.^(0:2)' \ y # Vandermonde-style fit
+    @test c(1.1) ≈ c2[1] + 1.1 * c2[2] + 1.1^2 * c2[3] rtol=1e-13
+end
+
+@testset "2d regression" begin
+    x = vec(SVector.(range(-3, 2, length=50), range(0,1, length=40)'))
+    fr(x::SVector{2}) = sin(x[1]/3 + 1)*exp(x[2])
+    c = chebregression(x, fr.(x), (2,3))
+
+    # Vandermonde-style fit:
+    powsvec(x) = vec([x[1]^i * x[2]^j for i=0:2, j=0:3])'
+    c2 = mapreduce(powsvec, vcat, x) \ fr.(x)
+
+    p = SVector(1.12345, sqrt(0.5))
+    @test c(p) ≈ powsvec(p)*c2 rtol=1e-13
+
+    cM = chebregression(mapreduce(transpose∘Vector, vcat, x), fr.(x), (2,3))
+    @test cM.coefs == c.coefs
+
+    fr4(x::SVector{2}) = cos(x[1]/3 + 1)*sin(x[2])
+    c4 = chebregression(x, fr4.(x), (2,3))
+    F14 = [SVector(fr(x),fr4(x)) for x in x]
+    c14 = chebregression(x, F14, (2,3))
+    @test first.(c14.coefs) ≈ c.coefs rtol=1e-13
+    @test last.(c14.coefs) ≈ c4.coefs rtol=1e-13
+    c14M = chebregression(x, mapreduce(transpose∘Vector, vcat, F14), (2,3))
+    @test c14M.coefs == c14.coefs
+end
