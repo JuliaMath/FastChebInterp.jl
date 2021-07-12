@@ -9,7 +9,7 @@ function chebregression(x::AbstractVector{SVector{N,Td}}, y::AbstractVector{T},
     # assemble rhs as matrix
     Y = Array{float(eltype(T))}(undef, length(y), length(first(y)))
     for j = 1:length(y)
-        Y[j,:] .= y[j + (begin-1)]
+        Y[j,:] .= y[j + (firstindex(y)-1)]
     end
 
     # assemble lhs matrix
@@ -22,7 +22,7 @@ function chebregression(x::AbstractVector{SVector{N,Td}}, y::AbstractVector{T},
     for i = 1:length(c.coefs)
         c.coefs[i] = 1 # basis function
         for j = 1:length(x)
-            A[j,i] = c(x[j + (begin-1)])
+            A[j,i] = c(x[j + (firstindex(x)-1)])
         end
         c.coefs[i] = 0 # reset
     end
