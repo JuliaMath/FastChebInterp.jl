@@ -22,7 +22,7 @@ to compute the tuple `(c(y), J(y))` of the interpolant and its Jacobian matrix a
 """
 module FastChebInterp
 
-export chebpoints, chebfit, chebfitv1, chebjacobian, chebgradient
+export chebpoints, chebfit, chebfitv1, chebjacobian, chebgradient, chebregression
 
 using StaticArrays
 import FFTW
@@ -50,6 +50,7 @@ end
 Base.ndims(c::ChebPoly) = ndims(c.coefs)
 
 include("fit.jl")
+include("regression.jl")
 include("eval.jl")
 
 end # module
