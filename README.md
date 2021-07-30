@@ -5,7 +5,7 @@
 Fast multidimensional Chebyshev interpolation on a hypercube (Cartesian-product)
 domain, using a separable (tensor-product) grid of Chebyshev interpolation points.
 
-(Note: this package is currently unregistered, so you have to supply the full URL when installing it in Julia: type `add https://github.com/stevengj/FastChebInterp.jl` at the `pkg>` prompt.)
+(Note: this package is currently unregistered, so you have to supply the full URL when installing it in Julia. Type `add https://github.com/stevengj/FastChebInterp.jl` at the `pkg>` prompt.)
 
 For domain upper and lower bounds `lb` and `ub`, and a given `order`
 tuple, you would create an interpolator for a function `f` via:
