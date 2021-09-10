@@ -30,4 +30,4 @@ returns a Chebyshev polynomial of a given `order` (tuple) fit
 to a set of points `x[i]` and values `y[i]`, optionally in a box
 with bounds `lb, ub` (which default to bounding box for `x`).
 
-This package is an experimental replacement for some of the functionality in [ChebyshevApprox.jl](https://github.com/RJDennis/ChebyshevApprox.jl) in order to get more performance.  The [ApproxFun.jl](https://github.com/JuliaApproximation/ApproxFun.jl) package also performs Chebyshev interpolation and many other tasks.
+This package is an experimental replacement for some of the functionality in [ChebyshevApprox.jl](https://github.com/RJDennis/ChebyshevApprox.jl) in order to get more performance.  The [ApproxFun.jl](https://github.com/JuliaApproximation/ApproxFun.jl) package also performs Chebyshev interpolation and many other tasks.   [BasicInterpolators.jl](https://github.com/markmbaum/BasicInterpolators.jl) also provides Chebyshev interpolation in 1d and 2d, and [Surrogates.jl](https://github.com/SciML/Surrogates.jl) provides some other interpolation schemes.
