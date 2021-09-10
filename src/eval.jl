@@ -20,7 +20,7 @@ should lie within [-1,+1] in each coordinate.
         c₁ = c[i1]
         if n ≤ 2
             n == 1 && return c₁ + one(xd) * zero(c₁)
-            return muladd(xd, c[i1], c₁)
+            return muladd(xd, c[i1+1], c₁)
         end
         @inbounds bₖ = muladd(2xd, c[i1+(n-1)], c[i1+(n-2)])
         @inbounds bₖ₊₁ = oftype(bₖ, c[i1+(n-1)])
@@ -83,7 +83,7 @@ interpolated value `v` and the Jacobian `J` with respect to `x[1:dim]`.
         c₁ = c[i1]
         if n ≤ 2
             n == 1 && return c₁ + one(xd) * zero(c₁), hcat(SVector(zero(c₁) / oneunit(xd)))
-            return muladd(xd, c[i1], c₁), hcat(SVector(c[i1]))
+            return muladd(xd, c[i1+1], c₁), hcat(SVector(c[i1+1]*one(xd)))
         end
         @inbounds cₙ₋₁ = c[i1+(n-2)]
         @inbounds cₙ = c[i1+(n-1)]
@@ -110,7 +110,7 @@ interpolated value `v` and the Jacobian `J` with respect to `x[1:dim]`.
         if n ≤ 2
             n == 1 && return c₁ + one(xd) * zero(c₁), hcat(Jc₁, SVector(zero(c₁) / oneunit(xd)))
             c₂,Jc₂ = Jinterpolate(x, c, dim′, i1+Δi, Δi)
-            return muladd(xd, c₂, c₁), hcat(muladd(xd, Jc₂, Jc₁), SVector(c[i1]))
+            return muladd(xd, c₂, c₁), hcat(muladd(xd, Jc₂, Jc₁), SVector(c₂*one(xd)))
         end
         cₙ₋₁,Jcₙ₋₁ = Jinterpolate(x, c, dim′, i1+(n-2)*Δi, Δi)
         cₙ,Jcₙ = Jinterpolate(x, c, dim′, i1+(n-1)*Δi, Δi)

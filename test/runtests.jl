@@ -83,3 +83,20 @@ end
     c14M = chebregression(x, mapreduce(transpose∘Vector, vcat, F14), (2,3))
     @test c14M.coefs == c14.coefs
 end
+
+@testset "degree 1" begin
+    lb,ub = -0.3, 0.9
+    x = chebpoints(1, lb, ub)
+    interp = chebfit((x -> 2x+3).(x), lb, ub)
+    @test interp(0) ≈ 3
+    @test interp(0.1) ≈ 3.2
+    @test chebgradient(interp, 0)[2] ≈ 2 ≈ chebgradient(interp, 0.1)[2]
+
+    lb, ub = [-0.3,-0.1], [0.9,1.2]
+    x = chebpoints((1,1), lb, ub)
+    interp = chebfit((x -> (2x[1]+3)*(4x[2]+5)).(x), lb, ub)
+    @test interp([0,0]) ≈ 3*5
+    @test interp([0.1,0]) ≈ 3.2*5
+    @test interp([0,0.1]) ≈ 3*5.4
+    @test chebgradient(interp, [0,0])[2] ≈ [2*5, 3*4]
+end
