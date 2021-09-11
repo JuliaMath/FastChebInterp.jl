@@ -9,7 +9,7 @@ using Test, FastChebInterp, StaticArrays
     f′(x) = f(x) * (1 - 4x/(1 + 2x^2))
     @test_throws ArgumentError chebpoints(-1, lb, ub)
     x = chebpoints(48, lb, ub)
-    interp = chebfit(f.(x), lb, ub)
+    interp = chebinterp(f.(x), lb, ub)
     @test ndims(interp) == 1
     x1 = 0.2
     @test interp(x1) ≈ f(x1)
@@ -21,8 +21,8 @@ end
     f(x) = exp(x[1]+2*x[2]) / (1 + 2x[1]^2 + x[2]^2)
     ∇f(x) = f(x) * SVector(1 - 4x[1]/(1 + 2x[1]^2 + x[2]^2), 2 - 2x[2]/(1 + 2x[1]^2 + x[2]^2))
     x = chebpoints((48,39), lb, ub)
-    interp = chebfit(f.(x), lb, ub)
-    interp0 = chebfit(f.(x), lb, ub, tol=0)
+    interp = chebinterp(f.(x), lb, ub)
+    interp0 = chebinterp(f.(x), lb, ub, tol=0)
     @test ndims(interp) == 2
     x1 = [0.2, 0.3]
     @test interp(x1) ≈ f(x1)
@@ -32,22 +32,22 @@ end
 
     # univariate function in 2d should automatically drop down to univariate polynomial
     f1(x) = exp(x[1]) / (1 + 2x[1]^2)
-    interp1 = chebfit(f1.(x), lb, ub)
+    interp1 = chebinterp(f1.(x), lb, ub)
     @test interp1(x1) ≈ f1(x1)
     @test size(interp1.coefs, 2) == 1 # second dimension should have been dropped
 
     # complex and vector-valued interpolants:
     f2(x) = [f(x), cis(x[1]*x[2] + 2x[2])]
     ∇f2(x) = vcat(transpose(∇f(x)), transpose(SVector(im*x[2], im*(x[1] + 2)) * cis(x[1]*x[2] + 2x[2])))
-    interp2 = chebfit(f2.(x), lb, ub)
+    interp2 = chebinterp(f2.(x), lb, ub)
     @test interp2(x1) ≈ f2(x1)
     @test chebjacobian(interp2, x1) ≈′ (f2(x1), ∇f2(x1))
 
-    # chebfitv1
+    # chebinterp_v1
     av1 = Array{ComplexF64}(undef, 2, size(x)...)
     av1[1,:,:] .= f.(x)
     av1[2,:,:] .= (x -> f2(x)[2]).(x)
-    interp2v1 = chebfitv1(av1, lb, ub)
+    interp2v1 = chebinterp_v1(av1, lb, ub)
     @test interp2v1(x1) ≈ f2(x1)
     @test chebjacobian(interp2v1, x1) ≈′ (f2(x1), ∇f2(x1))
 end
@@ -88,14 +88,14 @@ end
 @testset "degree 1" begin
     lb,ub = -0.3, 0.9
     x = chebpoints(1, lb, ub)
-    interp = chebfit((x -> 2x+3).(x), lb, ub)
+    interp = chebinterp((x -> 2x+3).(x), lb, ub)
     @test interp(0) ≈ 3
     @test interp(0.1) ≈ 3.2
     @test chebgradient(interp, 0)[2] ≈ 2 ≈ chebgradient(interp, 0.1)[2]
 
     lb, ub = [-0.3,-0.1], [0.9,1.2]
     x = chebpoints((1,1), lb, ub)
-    interp = chebfit((x -> (2x[1]+3)*(4x[2]+5)).(x), lb, ub)
+    interp = chebinterp((x -> (2x[1]+3)*(4x[2]+5)).(x), lb, ub)
     @test interp([0,0]) ≈ 3*5
     @test interp([0.1,0]) ≈ 3.2*5
     @test interp([0,0.1]) ≈ 3*5.4
@@ -105,19 +105,19 @@ end
 @testset "degree 0" begin
     lb,ub = -0.3, 0.9
     x = chebpoints(0, lb, ub)
-    interp = chebfit(sin.(x), lb, ub)
+    interp = chebinterp(sin.(x), lb, ub)
     @test interp(0) ≈ interp(0.1) ≈ sin((lb+ub)/2)
     @test chebgradient(interp, 0)[2] == 0 == chebgradient(interp, 0.1)[2]
 
     lb, ub = [-0.3,-0.1], [0.9,1.2]
     x = chebpoints((0,0), lb, ub)
-    interp = chebfit((x -> sin(x[1])*cos(x[2])).(x), lb, ub)
+    interp = chebinterp((x -> sin(x[1])*cos(x[2])).(x), lb, ub)
     @test interp([0,0]) ≈ interp([0.1,0.2]) ≈ sin(0.3)*cos(0.55)
     @test chebgradient(interp, [0.1,0.2])[2] == [0, 0]
 
     lb, ub = [-0.3,-0.1], [0.9,1.2]
     x = chebpoints((1,0), lb, ub)
-    interp = chebfit((x -> (2x[1]+3)*cos(x[2])).(x), lb, ub)
+    interp = chebinterp((x -> (2x[1]+3)*cos(x[2])).(x), lb, ub)
     @test interp([0,0]) ≈ 3*cos(0.55)
     @test interp([0.1,0.22]) ≈ 3.2*cos(0.55)
     @test chebgradient(interp, [0.1,0.2])[2] == [2*cos(0.55), 0]

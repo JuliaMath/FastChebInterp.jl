@@ -2,18 +2,18 @@
 # (using Clenshaw recurrences) and their derivatives.
 
 """
-    interpolate(x, c::Array{T,N}, ::Val{dim}, i1, len)
+    evaluate(x, c::Array{T,N}, ::Val{dim}, i1, len)
 
-Low-level interpolation function, which performs a
+Low-level polynomial-evaluation function, which performs a
 multidimensional Clenshaw recurrence by recursing on
-the coefficient (`c`) array dimension `dim` (from `N` to `1`).   The
-current dimension (via column-major order) is accessed
+the coefficient (`c`) array dimension `dim` (from `N` to `1`).
+The current dimension (via column-major order) is accessed
 by `c[i1 + (i-1)*Δi]`, i.e. `i1` is the starting index and
 `Δi = len ÷ size(c,dim)` is the stride.   `len` is the
 product of `size(c)[1:dim]`. The interpolation point `x`
 should lie within [-1,+1] in each coordinate.
 """
-@fastmath function interpolate(x::SVector{N}, c::Array{<:Any,N}, ::Val{dim}, i1, len) where {N,dim}
+@fastmath function evaluate(x::SVector{N}, c::Array{<:Any,N}, ::Val{dim}, i1, len) where {N,dim}
     n = size(c,dim)
     @inbounds xd = x[dim]
     if dim == 1
@@ -36,18 +36,18 @@ should lie within [-1,+1] in each coordinate.
         # since earlier dimensions are contiguous
         dim′ = Val{dim-1}()
 
-        c₁ = interpolate(x, c, dim′, i1, Δi)
+        c₁ = evaluate(x, c, dim′, i1, Δi)
         if n ≤ 2
             n == 1 && return c₁ + one(xd) * zero(c₁)
-            c₂ = interpolate(x, c, dim′, i1+Δi, Δi)
+            c₂ = evaluate(x, c, dim′, i1+Δi, Δi)
             return c₁ + xd*c₂
         end
-        cₙ₋₁ = interpolate(x, c, dim′, i1+(n-2)*Δi, Δi)
-        cₙ = interpolate(x, c, dim′, i1+(n-1)*Δi, Δi)
+        cₙ₋₁ = evaluate(x, c, dim′, i1+(n-2)*Δi, Δi)
+        cₙ = evaluate(x, c, dim′, i1+(n-1)*Δi, Δi)
         bₖ = muladd(2xd, cₙ, cₙ₋₁)
         bₖ₊₁ = oftype(bₖ, cₙ)
         for j = n-3:-1:1
-            cⱼ = interpolate(x, c, dim′, i1+j*Δi, Δi)
+            cⱼ = evaluate(x, c, dim′, i1+j*Δi, Δi)
             bⱼ = muladd(2xd, bₖ, cⱼ) - bₖ₊₁
             bₖ, bₖ₊₁ = bⱼ, bₖ
         end
@@ -63,7 +63,7 @@ Evaluate the Chebyshev polynomial given by `interp` at the point `x`.
 @fastmath function (interp::ChebPoly{N})(x::SVector{N,<:Real}) where {N}
     x0 = @. (x - interp.lb) * 2 / (interp.ub - interp.lb) - 1
     all(abs.(x0) .≤ 1) || throw(ArgumentError("$x not in domain"))
-    return interpolate(x0, interp.coefs, Val{N}(), 1, length(interp.coefs))
+    return evaluate(x0, interp.coefs, Val{N}(), 1, length(interp.coefs))
 end
 
 (interp::ChebPoly{N})(x::AbstractVector{<:Real}) where {N} = interp(SVector{N}(x))
@@ -71,12 +71,12 @@ end
 
 
 """
-    Jinterpolate(x, c::Array{T,N}, ::Val{dim}, i1, len)
+    Jevaluate(x, c::Array{T,N}, ::Val{dim}, i1, len)
 
-Similar to `interpolate` above, but returns a tuple `(v,J)` of the
-interpolated value `v` and the Jacobian `J` with respect to `x[1:dim]`.
+Similar to `evaluate` above, but returns a tuple `(v,J)` of the
+evaluated value `v` and the Jacobian `J` with respect to `x[1:dim]`.
 """
-@fastmath function Jinterpolate(x::SVector{N}, c::Array{<:Any,N}, ::Val{dim}, i1, len) where {N,dim}
+@fastmath function Jevaluate(x::SVector{N}, c::Array{<:Any,N}, ::Val{dim}, i1, len) where {N,dim}
     n = size(c,dim)
     @inbounds xd = x[dim]
     if dim == 1
@@ -106,14 +106,14 @@ interpolated value `v` and the Jacobian `J` with respect to `x[1:dim]`.
         # since earlier dimensions are contiguous
         dim′ = Val{dim-1}()
 
-        c₁,Jc₁ = Jinterpolate(x, c, dim′, i1, Δi)
+        c₁,Jc₁ = Jevaluate(x, c, dim′, i1, Δi)
         if n ≤ 2
             n == 1 && return c₁ + one(xd) * zero(c₁), hcat(Jc₁, SVector(zero(c₁) / oneunit(xd)))
-            c₂,Jc₂ = Jinterpolate(x, c, dim′, i1+Δi, Δi)
+            c₂,Jc₂ = Jevaluate(x, c, dim′, i1+Δi, Δi)
             return muladd(xd, c₂, c₁), hcat(muladd(xd, Jc₂, Jc₁), SVector(c₂*one(xd)))
         end
-        cₙ₋₁,Jcₙ₋₁ = Jinterpolate(x, c, dim′, i1+(n-2)*Δi, Δi)
-        cₙ,Jcₙ = Jinterpolate(x, c, dim′, i1+(n-1)*Δi, Δi)
+        cₙ₋₁,Jcₙ₋₁ = Jevaluate(x, c, dim′, i1+(n-2)*Δi, Δi)
+        cₙ,Jcₙ = Jevaluate(x, c, dim′, i1+(n-1)*Δi, Δi)
         bₖ′ = 2cₙ
         bₖ = muladd(xd, bₖ′, cₙ₋₁)
         Jbₖ = muladd(2xd, Jcₙ, Jcₙ₋₁)
@@ -121,7 +121,7 @@ interpolated value `v` and the Jacobian `J` with respect to `x[1:dim]`.
         bₖ₊₁′ = zero(bₖ₊₁)
         Jbₖ₊₁ = oftype(Jbₖ, Jcₙ)
         for j = n-3:-1:1
-            cⱼ,Jcⱼ = Jinterpolate(x, c, dim′, i1+j*Δi, Δi)
+            cⱼ,Jcⱼ = Jevaluate(x, c, dim′, i1+j*Δi, Δi)
             bⱼ = muladd(2xd, bₖ, cⱼ) - bₖ₊₁
             bⱼ′ = muladd(2xd, bₖ′, 2bₖ) - bₖ₊₁′
             Jbⱼ = muladd(2xd, Jbₖ, Jcⱼ) - Jbₖ₊₁
@@ -147,7 +147,7 @@ is a 1-row matrix; in this case you may wish to call `chebgradient` instead.
 function chebjacobian(c::ChebPoly{N}, x::SVector{N,<:Real}) where {N}
     x0 = @. (x - c.lb) * 2 / (c.ub - c.lb) - 1
     all(abs.(x0) .≤ 1) || throw(ArgumentError("$x not in domain"))
-    v, J = Jinterpolate(x0, c.coefs, Val{N}(), 1, length(c.coefs))
+    v, J = Jevaluate(x0, c.coefs, Val{N}(), 1, length(c.coefs))
     return v, J .* 2 ./ (c.ub .- c.lb)'
 end
 

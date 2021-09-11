@@ -16,7 +16,7 @@ and hypercube lower-and upper-bound vectors `lb` and `ub`.
 If `ub` and `lb` are numbers, returns an array of numbers.
 
 These are the points where you should evaluate a function
-in order to create a Chebyshev interpolant with `chebfit`.
+in order to create a Chebyshev interpolant with `chebinterp`.
 
 (Note that the number of points along each dimension is `1 +`
 the order in that direction.)
@@ -87,7 +87,7 @@ function droptol(coefs::Array{<:Any,N}, tol::Real) where {N}
     return coefs[CartesianIndices(map(n -> 1:n, newsize))]
 end
 
-function chebfit(vals::AbstractArray{<:Any,N}, lb::SVector{N}, ub::SVector{N}; tol::Real=epsvals(vals)) where {N}
+function chebinterp(vals::AbstractArray{<:Any,N}, lb::SVector{N}, ub::SVector{N}; tol::Real=epsvals(vals)) where {N}
     Td = promote_type(eltype(lb), eltype(ub))
     coefs = droptol(chebcoefs(vals), tol)
     return ChebPoly{N,eltype(coefs),Td}(coefs, SVector{N,Td}(lb), SVector{N,Td}(ub))
@@ -97,7 +97,7 @@ end
 epsvals(vals) = eps(float(real(eltype(eltype(vals)))))
 
 """
-    chebfit(vals, lb, ub; tol=eps)
+    chebinterp(vals, lb, ub; tol=eps)
 
 Given a multidimensional array `vals` of function values (at
 points corresponding to the coordinates returned by `chebpoints`),
@@ -105,7 +105,7 @@ and arrays `lb` and `ub` of the lower and upper coordinate bounds
 of the domain in each direction, returns a Chebyshev interpolation
 object (a `ChebPoly`).
 
-This object `c = chebfit(vals, lb, ub)` can be used to
+This object `c = chebinterp(vals, lb, ub)` can be used to
 evaluate the interpolating polynomial at a point `x` via
 `c(x)`.
 
@@ -118,20 +118,20 @@ Chebyshev coefficients are dropped; it defaults to machine precision
 for the precision of `float(vals)`.   Passing `tol=0` will keep
 all coefficients up to the order passed to `chebpoints`.
 """
-chebfit(vals::AbstractArray{<:Any,N}, lb, ub; tol::Real=epsvals(vals)) where {N} =
-    chebfit(vals, SVector{N}(lb), SVector{N}(ub); tol=tol)
+chebinterp(vals::AbstractArray{<:Any,N}, lb, ub; tol::Real=epsvals(vals)) where {N} =
+    chebinterp(vals, SVector{N}(lb), SVector{N}(ub); tol=tol)
 
 """
-    chebfitv1(vals, lb, ub; tol=eps)
+    chebinterp_v1(vals, lb, ub; tol=eps)
 
-Like `chebfit(vals, lb, ub)`, but slices off the *first* dimension of `vals`
+Like `chebinterp(vals, lb, ub)`, but slices off the *first* dimension of `vals`
 and treats it as a vector of values to interpolate.
 
 For example, if `vals` is a 2×31×32 array of numbers, then it is treated
-equivalently to calling `chebfit` with a 31×32 array of 2-component vectors.
+equivalently to calling `chebinterp` with a 31×32 array of 2-component vectors.
 
 (This function is mainly useful for calling from Python, where arrays
 of vectors are painful to construct.)
 """
-chebfitv1(vals::AbstractArray{T}, lb, ub; tol::Real=epsvals(vals)) where {T<:Number} =
-    chebfit(dropdims(reinterpret(SVector{size(vals,1),T}, Array(vals)), dims=1), lb, ub; tol=tol)
+chebinterp_v1(vals::AbstractArray{T}, lb, ub; tol::Real=epsvals(vals)) where {T<:Number} =
+    chebinterp(dropdims(reinterpret(SVector{size(vals,1),T}, Array(vals)), dims=1), lb, ub; tol=tol)

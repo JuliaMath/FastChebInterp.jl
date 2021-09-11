@@ -7,7 +7,7 @@ tuple, you would create an interpolator for a function `f` via:
 ```
 using FastChebInterp
 x = chebpoints(order, lb, ub) # an array of StaticVector
-c = chebfit(f.(x), lb, ub)
+c = chebinterp(f.(x), lb, ub)
 ```
 and then evaluate the interpolant for a point `y` (a vector)
 via `c(y)`.
@@ -22,7 +22,7 @@ to compute the tuple `(c(y), J(y))` of the interpolant and its Jacobian matrix a
 """
 module FastChebInterp
 
-export chebpoints, chebfit, chebfitv1, chebjacobian, chebgradient, chebregression
+export chebpoints, chebinterp, chebinterp_v1, chebjacobian, chebgradient, chebregression
 
 using StaticArrays
 import FFTW
@@ -49,7 +49,7 @@ function Base.show(io::IO, c::ChebPoly)
 end
 Base.ndims(c::ChebPoly) = ndims(c.coefs)
 
-include("fit.jl")
+include("interp.jl")
 include("regression.jl")
 include("eval.jl")
 

@@ -14,7 +14,7 @@ tuple, you would create an interpolator for a function `f` via:
 ```
 using FastChebInterp
 x = chebpoints(order, lb, ub) # an array of StaticVector
-c = chebfit(f.(x), lb, ub)
+c = chebinterp(f.(x), lb, ub)
 ```
 and then evaluate the interpolant for a point `y` (a vector)
 via `c(y)`.
