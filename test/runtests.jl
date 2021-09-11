@@ -7,6 +7,7 @@ using Test, FastChebInterp, StaticArrays
     lb,ub = -0.3, 0.9
     f(x) = exp(x) / (1 + 2x^2)
     f′(x) = f(x) * (1 - 4x/(1 + 2x^2))
+    @test_throws ArgumentError chebpoints(-1, lb, ub)
     x = chebpoints(48, lb, ub)
     interp = chebfit(f.(x), lb, ub)
     @test ndims(interp) == 1

@@ -24,6 +24,7 @@ the order in that direction.)
 function chebpoints(order, lb, ub)
     N = length(order)
     N == length(lb) == length(ub) || throw(DimensionMismatch())
+    all(≥(0), order) || throw(ArgumentError("invalid negative order $order"))
     return chebpoints(NTuple{N,Int}(order), SVector{N}(lb), SVector{N}(ub))
 end
 
