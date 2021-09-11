@@ -100,3 +100,24 @@ end
     @test interp([0,0.1]) ≈ 3*5.4
     @test chebgradient(interp, [0,0])[2] ≈ [2*5, 3*4]
 end
+
+@testset "degree 0" begin
+    lb,ub = -0.3, 0.9
+    x = chebpoints(0, lb, ub)
+    interp = chebfit(sin.(x), lb, ub)
+    @test interp(0) ≈ interp(0.1) ≈ sin((lb+ub)/2)
+    @test chebgradient(interp, 0)[2] == 0 == chebgradient(interp, 0.1)[2]
+
+    lb, ub = [-0.3,-0.1], [0.9,1.2]
+    x = chebpoints((0,0), lb, ub)
+    interp = chebfit((x -> sin(x[1])*cos(x[2])).(x), lb, ub)
+    @test interp([0,0]) ≈ interp([0.1,0.2]) ≈ sin(0.3)*cos(0.55)
+    @test chebgradient(interp, [0.1,0.2])[2] == [0, 0]
+
+    lb, ub = [-0.3,-0.1], [0.9,1.2]
+    x = chebpoints((1,0), lb, ub)
+    interp = chebfit((x -> (2x[1]+3)*cos(x[2])).(x), lb, ub)
+    @test interp([0,0]) ≈ 3*cos(0.55)
+    @test interp([0.1,0.22]) ≈ 3.2*cos(0.55)
+    @test chebgradient(interp, [0.1,0.2])[2] == [2*cos(0.55), 0]
+end

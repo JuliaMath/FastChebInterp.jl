@@ -2,10 +2,10 @@
 # to functions evaluated at Chebyshev points.
 
 chebpoint(i::CartesianIndex{N}, order::NTuple{N,Int}, lb::SVector{N}, ub::SVector{N}) where {N} =
-    @. lb + (1 + cos($SVector($Tuple(i)) * π / $SVector(order))) * (ub - lb) * 0.5
+    @. lb + (1 + cos($SVector($Tuple(i)) * π / $SVector(ifelse.(iszero.(order),2,order)))) * (ub - lb) * 0.5
 
 chebpoints(order::NTuple{N,Int}, lb::SVector{N}, ub::SVector{N}) where {N} =
-    [chebpoint(i,order,lb,ub) for i in CartesianIndices(map(n -> 0:n, order))]
+    [chebpoint(i,order,lb,ub) for i in CartesianIndices(map(n -> n==0 ? (1:1) : (0:n), order))]
 
 """
     chebpoints(order, lb, ub)
@@ -33,14 +33,18 @@ chebpoints(order::Integer, lb::Real, ub::Real) =
 
 # O(n log n) method to compute Chebyshev coefficients
 function chebcoefs(vals::AbstractArray{<:Number,N}) where {N}
-    coefs = FFTW.r2r(vals, FFTW.REDFT00) # type-I DCT
+     # type-I DCT, except for size-1 dimensions where we want identity
+    kind = map(n -> n > 1 ? FFTW.REDFT00 : FFTW.DHT, size(vals))
+    coefs = FFTW.r2r(vals, kind)
 
     # renormalize the result to obtain the conventional
     # Chebyshev-polnomial coefficients
     s = size(coefs)
-    coefs ./= prod(map(n -> 2(n-1), s))
+    coefs ./= prod(map(n -> n > 1 ? 2(n-1) : 1, s))
     for dim = 1:N
-        coefs[CartesianIndices(ntuple(i -> i == dim ? (2:s[i]-1) : (1:s[i]), Val{N}()))] .*= 2
+        if size(coefs, dim) > 1
+            coefs[CartesianIndices(ntuple(i -> i == dim ? (2:s[i]-1) : (1:s[i]), Val{N}()))] .*= 2
+        end
     end
 
     return coefs
