@@ -41,7 +41,7 @@ struct ChebPoly{N,T,Td<:Real}
 end
 
 function Base.show(io::IO, c::ChebPoly)
-    print(io, "Chebyshev order ", map(i->i-1,size(c.coefs)), " interpolator on ",
+    print(io, "Chebyshev order ", map(i->i-1,size(c.coefs)), " polynomial on ",
           '[', c.lb[1], ',', c.ub[1], ']')
     for i = 2:length(c.lb)
         print(io, " × [", c.lb[i], ',', c.ub[i], ']')
