@@ -13,7 +13,7 @@ For domain upper and lower bounds `lb` and `ub`, and a given `order`
 tuple, you would create an interpolator for a function `f` via:
 ```
 using FastChebInterp
-x = chebpoints(order, lb, ub) # an array of StaticVector
+x = chebpoints(order, lb, ub) # an array of StaticVector, or scalars in 1d
 c = chebinterp(f.(x), lb, ub)
 ```
 and then evaluate the interpolant for a point `y` (a vector)
