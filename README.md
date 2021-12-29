@@ -91,7 +91,7 @@ julia> g([1.2, 3.4]) # exact value
 julia> g([1.2, 3.4]) - c([1.2, 3.4])
 -2.914335439641036e-15
 ```
-In this case, because the function smooth and not very wiggly in the domain, our low-degree polynomial suffices to interpolate to nearly machine (`Float64`) precision.
+In this case, because the function is smooth and not very wiggly in the domain, our low-degree polynomial suffices to interpolate to nearly machine (`Float64`) precision.
 
 Note that FastChebInterp uses [StaticArrays.jl](https://github.com/JuliaArrays/StaticArrays.jl) internally to work with vectors, and e.g. a `Vector` like `[1.2, 3.4]` gets converted to an `SVector` internally.  If you are working with many such coordinate vectors, it is often advisable to [use StaticArrays](https://docs.julialang.org/en/v1/manual/performance-tips/#Consider-StaticArrays.jl-for-small-fixed-size-vector/matrix-operations) yourself, in which case you can pass `SVector` coordinates directly to FastChebInterp functions.
 
