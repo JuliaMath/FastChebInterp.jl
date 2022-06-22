@@ -1,18 +1,8 @@
 # Chebyshev regression: least-square fits of data
 # to multidimensional Chebyshev polynomials.
 
-function chebregression(x::AbstractVector{SVector{N,Td}}, y::AbstractVector{T},
-                        lb::SVector{N,Td}, ub::SVector{N,Td}, order::NTuple{N,Int}) where {N,Td<:Real,T<:Union{SVector,Number}}
-    length(x) == length(y) || throw(DimensionMismatch())
-    length(x) ≥ prod(order .+ 1) || throw(ArgumentError("not enough data points $(length(x)) to fit to order $order"))
-
-    # assemble rhs as matrix
-    Y = Array{float(eltype(T))}(undef, length(y), length(first(y)))
-    for j = 1:length(y)
-        Y[j,:] .= y[j + (firstindex(y)-1)]
-    end
-
-    # assemble lhs matrix
+# assemble Chebyshev-Vandermonde matrix
+function _chebvandermonde(x::AbstractVector{SVector{N,Td}}, lb::SVector{N,Td}, ub::SVector{N,Td}, order::NTuple{N,Int}) where {N,Td<:Real}
     # (TODO: this algorithm is O(length(x) * length(c)²),
     #  but it should be possible to do it in linear time.
     #  However, the A \ Y step is also O(mn²), so this
@@ -26,6 +16,52 @@ function chebregression(x::AbstractVector{SVector{N,Td}}, y::AbstractVector{T},
         end
         c.coefs[i] = 0 # reset
     end
+    return A
+end
+
+# wrapper around _chebvandermonde for testing convenience
+chebvandermonde(x::AbstractVector{SVector{N,Td}}, lb::SVector{N,Td}, ub::SVector{N,Td}, order::NTuple{N,Int}) where {N,Td<:Real} =
+    _chebvandermonde(x, lb, ub, order)
+
+# optimized method for 1d case
+function chebvandermonde(x::AbstractVector{SVector{1,Td}}, lb::SVector{1,Td}, ub::SVector{1,Td}, order::NTuple{1,Int}) where {Td<:Real}
+    lb1, ub1, o1 = lb[1], ub[1], order[1]
+    o1 >= 0 || throw(ArgumentError("order $o1 must be nonnegative"))
+    A = Array{Td}(undef, length(x), o1+1)
+    for j = 1:length(x)
+        xⱼ = (x[j][1] - lb1) * 2 / (ub1 - lb1) - 1
+        -1 ≤ xⱼ ≤ 1 || throw(ArgumentError("$(x[j][1]) not in domain [$lb1,$ub1]"))
+        A[j,1] = Tᵢ₋₂ = 1
+        if o1 > 0
+            Tᵢ₋₁ = xⱼ
+            A[j,2] = Tᵢ₋₁
+            twoxⱼ = 2xⱼ
+            for i = 3:o1+1 # Chebyshev recurrence
+                A[j,i] = Tᵢ = twoxⱼ * Tᵢ₋₁ - Tᵢ₋₂
+                Tᵢ₋₂, Tᵢ₋₁ = Tᵢ₋₁, Tᵢ
+            end
+        end
+    end
+    return A
+end
+
+# convenient API for 1d case
+chebvandermonde(x::AbstractVector{Td}, lb::Real, ub::Real, order::Integer) where {Td<:Real} =
+    return chebvandermonde(reinterpret(SVector{1,Td}, x), SVector{1,Td}(lb), SVector{1,Td}(ub), (Int(order),))
+
+function chebregression(x::AbstractVector{SVector{N,Td}}, y::AbstractVector{T},
+                        lb::SVector{N,Td}, ub::SVector{N,Td}, order::NTuple{N,Int}) where {N,Td<:Real,T<:Union{SVector,Number}}
+    length(x) == length(y) || throw(DimensionMismatch())
+    length(x) ≥ prod(order .+ 1) || throw(ArgumentError("not enough data points $(length(x)) to fit to order $order"))
+
+    # assemble rhs as matrix
+    Y = Array{float(eltype(T))}(undef, length(y), length(first(y)))
+    for j = 1:length(y)
+        Y[j,:] .= y[j + (firstindex(y)-1)]
+    end
+
+    # assemble lhs matrix
+    A = chebvandermonde(x, lb, ub, order)
 
     # least-square solution
     C = A \ Y
