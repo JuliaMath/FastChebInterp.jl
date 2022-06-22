@@ -58,6 +58,15 @@ end
     c = chebregression(x, y, 2)
     c2 = x.^(0:2)' \ y # Vandermonde-style fit
     @test c(1.1) ≈ c2[1] + 1.1 * c2[2] + 1.1^2 * c2[3] rtol=1e-13
+
+    # test specialized Vandermonde matrix constructor
+    x = [0.14, 0.95, 0.83, 0.13, 0.42, 0.12]
+    xv = reinterpret(SVector{1,Float64}, x)
+    A1 = FastChebInterp.chebvandermonde(x, 0.1, 0.99, 4)
+    A = FastChebInterp._chebvandermonde(xv,  SVector(0.1), SVector(0.99), (4,))
+    @test A ≈ A1 rtol=1e-13
+    @test_throws ArgumentError FastChebInterp.chebvandermonde(x, 0.1, 0.9, 4)
+    @test_throws ArgumentError FastChebInterp._chebvandermonde(xv,  SVector(0.1), SVector(0.9), (4,))
 end
 
 @testset "2d regression" begin
