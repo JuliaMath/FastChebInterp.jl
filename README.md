@@ -22,7 +22,7 @@ the interpolant and its gradient at a point `y`.  (You can also use automatic di
 but `chebgradient` is slightly faster and also supports derivatives of complex-valued functions, unlike ForwardDiff.   [ChainRules](https://github.com/JuliaDiff/ChainRules.jl) are also implemented in this package to speed up derivative computations using AD tools like [Zygote.jl](https://github.com/FluxML/Zygote.jl).)
 
 The FastChebInterp package also supports complex and vector-valued functions `f`.  In
-this case, `c(y)` returns a vector of interpolants, and one can use `chebjacobian(c,y)`
+the latter case, `c(y)` returns a vector of interpolants, and one can use `chebjacobian(c,y)`
 to compute the tuple `(c(y), J(y))` of the interpolant and its Jacobian matrix at `y`.
 
 ### Regression from arbitrary points
