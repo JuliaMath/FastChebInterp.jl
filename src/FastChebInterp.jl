@@ -34,7 +34,7 @@ A multidimensional Chebyshev-polynomial interpolation object.
 Given a `c::ChebPoly`, you can evaluate it at a point `x`
 with `c(x)`, where `x` is a vector (or a scalar if `c` is 1d).
 """
-struct ChebPoly{N,T,Td<:Real}
+struct ChebPoly{N,T,Td<:Real} <: Function
     coefs::Array{T,N} # chebyshev coefficients
     lb::SVector{N,Td} # lower/upper bounds
     ub::SVector{N,Td} #    of the domain
@@ -48,9 +48,11 @@ function Base.show(io::IO, c::ChebPoly)
     end
 end
 Base.ndims(c::ChebPoly) = ndims(c.coefs)
+Base.zero(c::ChebPoly{N,T,Td}) where {N,T,Td} = ChebPoly{N,T,Td}(zero(c.coefs), c.lb, c.ub)
 
 include("interp.jl")
 include("regression.jl")
 include("eval.jl")
+include("chainrules.jl")
 
 end # module
