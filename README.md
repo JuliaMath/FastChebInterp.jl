@@ -19,7 +19,7 @@ via `c(y)`.
 
 We also provide a function `chebgradient(c,y)` that returns a tuple `(c(y), ∇c(y))` of
 the interpolant and its gradient at a point `y`.  (You can also use automatic differentiation, e.g. via the [ForwardDiff.jl package](https://github.com/JuliaDiff/ForwardDiff.jl),
-but `chebgradient` is slightly faster and also supports derivatives of complex-valued functions, unlike ForwardDiff.)
+but `chebgradient` is slightly faster and also supports derivatives of complex-valued functions, unlike ForwardDiff.   [ChainRules](https://github.com/JuliaDiff/ChainRules.jl) are also implemented in this package to speed up derivative computations using AD tools like [Zygote.jl](https://github.com/FluxML/Zygote.jl).)
 
 The FastChebInterp package also supports complex and vector-valued functions `f`.  In
 this case, `c(y)` returns a vector of interpolants, and one can use `chebjacobian(c,y)`
