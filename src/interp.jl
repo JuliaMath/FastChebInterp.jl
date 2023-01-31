@@ -1,8 +1,10 @@
 # "fitting" (actually just interpolating) Chebyshev polynomials
 # to functions evaluated at Chebyshev points.
 
-chebpoint(i::CartesianIndex{N}, order::NTuple{N,Int}, lb::SVector{N}, ub::SVector{N}) where {N} =
-    @. lb + (1 + cos($SVector($Tuple(i)) * π / $SVector(ifelse.(iszero.(order),2,order)))) * (ub - lb) * 0.5
+function chebpoint(i::CartesianIndex{N}, order::NTuple{N,Int}, lb::SVector{N}, ub::SVector{N}) where {N}
+    T = typeof(float(one(eltype(lb)) * one(eltype(ub))))
+    @. lb + (1 + cos(T($SVector($Tuple(i))) * π / $SVector(ifelse.(iszero.(order),2,order)))) * (ub - lb) * $(T(0.5))
+end
 
 chebpoints(order::NTuple{N,Int}, lb::SVector{N}, ub::SVector{N}) where {N} =
     [chebpoint(i,order,lb,ub) for i in CartesianIndices(map(n -> n==0 ? (1:1) : (0:n), order))]
