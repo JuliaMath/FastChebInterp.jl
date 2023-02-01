@@ -40,13 +40,18 @@ struct ChebPoly{N,T,Td<:Real} <: Function
     ub::SVector{N,Td} #    of the domain
 end
 
-function Base.show(io::IO, c::ChebPoly)
-    print(io, "Chebyshev order ", map(i->i-1,size(c.coefs)), " polynomial on ",
+function Base.show(io::IO, c::ChebPoly{N,T,Td}) where {N,T,Td}
+    print(io, "ChebPoly{$N,$T,$Td} order ", map(i->i-1,size(c.coefs)), " polynomial on ",
           '[', c.lb[1], ',', c.ub[1], ']')
     for i = 2:length(c.lb)
         print(io, " × [", c.lb[i], ',', c.ub[i], ']')
     end
 end
+
+# need explicit 3-arg show so that we don't call the
+# 3-arg ::Function method:
+Base.show(io::IO, ::MIME"text/plain", c::ChebPoly) = show(io, c)
+
 Base.ndims(c::ChebPoly) = ndims(c.coefs)
 Base.zero(c::ChebPoly{N,T,Td}) where {N,T,Td} = ChebPoly{N,T,Td}(zero(c.coefs), c.lb, c.ub)
 

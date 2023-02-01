@@ -62,7 +62,7 @@ Evaluate the Chebyshev polynomial given by `interp` at the point `x`.
 """
 @fastmath function (interp::ChebPoly{N})(x::SVector{N,<:Real}) where {N}
     x0 = @. (x - interp.lb) * 2 / (interp.ub - interp.lb) - 1
-    all(abs.(x0) .≤ 1) || throw(ArgumentError("$x not in domain"))
+    all(abs.(x0) .≤ 1) || throw(ArgumentError("$x not in domain $(interp.lb) to $(interp.ub)"))
     return evaluate(x0, interp.coefs, Val{N}(), 1, length(interp.coefs))
 end
 
@@ -146,7 +146,7 @@ is a 1-row matrix; in this case you may wish to call `chebgradient` instead.
 """
 function chebjacobian(c::ChebPoly{N}, x::SVector{N,<:Real}) where {N}
     x0 = @. (x - c.lb) * 2 / (c.ub - c.lb) - 1
-    all(abs.(x0) .≤ 1) || throw(ArgumentError("$x not in domain"))
+    all(abs.(x0) .≤ 1) || throw(ArgumentError("$x not in domain $(c.lb) to $(c.ub)"))
     v, J = Jevaluate(x0, c.coefs, Val{N}(), 1, length(c.coefs))
     return v, J .* 2 ./ (c.ub .- c.lb)'
 end
