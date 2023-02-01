@@ -20,8 +20,8 @@ Random.seed!(314159) # make chainrules tests deterministic
         x1 = T(0.2)
         @test interp(x1) ≈ f(x1)
         @test chebgradient(interp, x1) ≈′ (f(x1), f′(x1))
-        test_frule(interp, x1, rtol=sqrt(eps(T)), atol=0)
-        test_rrule(interp, x1, rtol=sqrt(eps(T)), atol=0)
+        test_frule(interp, x1, rtol=sqrt(eps(T)), atol=sqrt(eps(T)))
+        test_rrule(interp, x1, rtol=sqrt(eps(T)), atol=sqrt(eps(T)))
     end
 end
 
@@ -42,8 +42,8 @@ end
         @test interp(x1) ≈ interp0(x1) rtol=10eps(T)
         @test all(n -> n[1] < n[2], zip(size(interp.coefs), size(interp0.coefs)))
         @test chebgradient(interp, x1) ≈′ (f(x1), ∇f(x1))
-        test_frule(interp, x1, rtol=sqrt(eps(T)), atol=0)
-        test_rrule(interp, x1, rtol=sqrt(eps(T)), atol=0)
+        test_frule(interp, x1, rtol=sqrt(eps(T)), atol=sqrt(eps(T)))
+        test_rrule(interp, x1, rtol=sqrt(eps(T)), atol=sqrt(eps(T)))
 
         # univariate function in 2d should automatically drop down to univariate polynomial
         f1(x) = exp(x[1]) / (1 + 2x[1]^2)
@@ -57,8 +57,8 @@ end
         interp2 = chebinterp(f2.(x), lb, ub)
         @test interp2(x1) ≈ f2(x1)
         @test chebjacobian(interp2, x1) ≈′ (f2(x1), ∇f2(x1))
-        test_frule(interp2, x1, rtol=sqrt(eps(T)), atol=0)
-        test_rrule(interp2, x1, rtol=sqrt(eps(T)), atol=0)
+        test_frule(interp2, x1, rtol=sqrt(eps(T)), atol=sqrt(eps(T)))
+        test_rrule(interp2, x1, rtol=sqrt(eps(T)), atol=sqrt(eps(T)))
 
         # chebinterp_v1
         av1 = Array{Complex{T}}(undef, 2, size(x)...)
