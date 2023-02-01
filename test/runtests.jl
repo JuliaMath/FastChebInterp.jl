@@ -13,8 +13,9 @@ Random.seed!(314159) # make chainrules tests deterministic
         @test_throws ArgumentError chebpoints(-1, lb, ub)
         x = chebpoints(48, lb, ub)
         @test eltype(x) == T
-        interp = chebinterp(f.(x), lb, ub)
+        interp = chebinterp(f.(x), lb, ub, tol=0)
         @test interp isa FastChebInterp.ChebPoly{1,T,T}
+        @test repr("text/plain", interp) == "ChebPoly{1,$T,$T} order (48,) polynomial on [-0.3,0.9]"
         @test ndims(interp) == 1
         x1 = T(0.2)
         @test interp(x1) ≈ f(x1)
@@ -34,6 +35,7 @@ end
         interp = chebinterp(f.(x), lb, ub)
         @test interp isa FastChebInterp.ChebPoly{2,T,T}
         interp0 = chebinterp(f.(x), lb, ub, tol=0)
+        @test repr("text/plain", interp0) == "ChebPoly{2,$T,$T} order (48, 39) polynomial on [-0.3,0.9] × [0.1,1.2]"
         @test ndims(interp) == 2
         x1 = T[0.2, 0.3]
         @test interp(x1) ≈ f(x1)
