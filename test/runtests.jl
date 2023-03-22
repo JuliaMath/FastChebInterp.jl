@@ -149,3 +149,26 @@ end
     @test interp([0.1,0.22]) ≈ 3.2*cos(0.55)
     @test chebgradient(interp, [0.1,0.2])[2] == [2*cos(0.55), 0]
 end
+
+@testset "Array-valued interpolation" begin
+    f11(x) = sin(x); f22 = f11
+    f12(x) = cos(x); f21 = f12
+    f1(x) = SHermitianCompact{2,Float64,3}((f11(x), f12(x), f21(x), f22(x)))
+    f2(x) = SMatrix(f1(x))
+    f3(x) = Matrix(f1(x))
+    lb,ub = -0.3, 0.9
+    x = chebpoints(10, lb, ub)
+    interp11 = chebinterp(f11.(x), lb, ub)
+    interp12 = chebinterp(f12.(x), lb, ub)
+    interp21 = chebinterp(f21.(x), lb, ub)
+    interp22 = chebinterp(f22.(x), lb, ub)
+    interp_ref(x) = [
+        interp11(x) interp21(x)
+        interp12(x) interp22(x)
+    ]
+    for f in (f1, f2, f3)
+        interp = chebinterp(f.(x), lb, ub)
+        y = 0.1111113
+        @test interp(y) ≈ interp_ref(y)
+    end
+end

@@ -35,17 +35,17 @@ chebpoints(order::Integer, lb::Real, ub::Real) =
     first.(chebpoints(order, SVector(lb), SVector(ub)))
 
 # O(n log n) method to compute Chebyshev coefficients
-function chebcoefs(vals::AbstractArray{<:Number,N}) where {N}
+function chebcoefs(vals::AbstractArray{<:Number,N}, dims=FFTW._ntupleid(Val(N))) where {N}
      # type-I DCT, except for size-1 dimensions where we want identity
-    kind = map(n -> n > 1 ? FFTW.REDFT00 : FFTW.DHT, size(vals))
-    coefs = FFTW.r2r(vals, kind)
+    kind = map(n -> size(vals, n) > 1 ? FFTW.REDFT00 : FFTW.DHT, dims)
+    coefs = FFTW.r2r(vals, kind, dims)
 
     # renormalize the result to obtain the conventional
-    # Chebyshev-polnomial coefficients
+    # Chebyshev-polynomial coefficients
     s = size(coefs)
-    coefs ./= prod(map(n -> n > 1 ? 2(n-1) : 1, s))
-    for dim = 1:N
-        if size(coefs, dim) > 1
+    coefs ./= prod(map(m -> (n=s[m]; n > 1 ? 2(n-1) : 1), dims))
+    for dim in dims
+        if s[dim] > 1
             coefs[CartesianIndices(ntuple(i -> i == dim ? (2:s[i]-1) : (1:s[i]), Val{N}()))] .*= 2
         end
     end
@@ -53,25 +53,25 @@ function chebcoefs(vals::AbstractArray{<:Number,N}) where {N}
     return coefs
 end
 
-function chebcoefs(vals::AbstractArray{<:SVector{K}}) where {K}
+function chebcoefs(vals::AbstractArray{T,M}) where {T<:StaticArray,M}
     # TODO: in principle we could call FFTW's low-level interface
     # to perform all the transforms simultaneously, rather than
     # transforming each component separately.
-    coefs = ntuple(i -> chebcoefs([v[i] for v in vals]), Val{K}())
-    return SVector{K}.(coefs...)
+    coefs = chebcoefs(reinterpret(reshape, eltype(T), vals), 2:M+1)
+    return reinterpret(reshape, T, coefs)
 end
 
-function chebcoefs(vals::AbstractArray{<:AbstractVector})
-    K, K′ = extrema(length, vals)
-    K == K′ || throw(ArgumentError("array elements must all be of the same length"))
-    return chebcoefs(SVector{K}.(vals))
+function chebcoefs(vals::AbstractArray{<:AbstractArray})
+    S = unique(size(v) for v in vals)
+    length(S) == 1 || throw(ArgumentError("array elements must all be of the same size"))
+    return chebcoefs(SArray{Tuple{only(S)...}}.(vals))
 end
 
 # norm for tolerance tests of chebyshev coefficients
 infnorm(x::Number) = abs(x)
 infnorm(x::AbstractArray) = maximum(abs, x)
 
-function droptol(coefs::Array{<:Any,N}, tol::Real) where {N}
+function droptol(coefs::AbstractArray{<:Any,N}, tol::Real) where {N}
     abstol = maximum(infnorm, coefs) * tol # absolute tolerance
     all(c -> infnorm(c) ≥ abstol, coefs) && return coefs # nothing to drop
 
@@ -136,4 +136,4 @@ equivalently to calling `chebinterp` with a 31×32 array of 2-component vectors.
 of vectors are painful to construct.)
 """
 chebinterp_v1(vals::AbstractArray{T}, lb, ub; tol::Real=epsvals(vals)) where {T<:Number} =
-    chebinterp(dropdims(reinterpret(SVector{size(vals,1),T}, Array(vals)), dims=1), lb, ub; tol=tol)
+    chebinterp(reinterpret(reshape, SVector{size(vals,1),T}, Array(vals)), lb, ub; tol=tol)
