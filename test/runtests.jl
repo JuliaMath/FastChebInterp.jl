@@ -172,3 +172,27 @@ end
         @test interp(y) ≈ interp_ref(y)
     end
 end
+
+@testset "Array-valued regression" begin
+    f11(x) = sin(x); f22 = f11
+    f12(x) = cos(x); f21 = f12
+    f1(x) = SHermitianCompact{2,Float64,3}((f11(x), f12(x), f21(x), f22(x)))
+    f2(x) = SMatrix(f1(x))
+    f3(x) = Matrix(f1(x))
+    order = 7
+    lb,ub = -0.3, 0.9
+    x = range(lb, ub, length=50)
+    interp11 = chebregression(x, f11.(x), lb, ub, order)
+    interp12 = chebregression(x, f12.(x), lb, ub, order)
+    interp21 = chebregression(x, f21.(x), lb, ub, order)
+    interp22 = chebregression(x, f22.(x), lb, ub, order)
+    interp_ref(x) = [
+        interp11(x) interp21(x)
+        interp12(x) interp22(x)
+    ]
+    for f in (f1, f2, f3)
+        interp = chebregression(x, f.(x), lb, ub, order)
+        y = 0.1111113
+        @test interp(y) ≈ interp_ref(y)
+    end
+end

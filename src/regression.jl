@@ -50,15 +50,12 @@ chebvandermonde(x::AbstractVector{Td}, lb::Real, ub::Real, order::Integer) where
     return chebvandermonde(reinterpret(SVector{1,Td}, x), SVector{1,Td}(lb), SVector{1,Td}(ub), (Int(order),))
 
 function chebregression(x::AbstractVector{SVector{N,Td}}, y::AbstractVector{T},
-                        lb::SVector{N,Td}, ub::SVector{N,Td}, order::NTuple{N,Int}) where {N,Td<:Real,T<:Union{SVector,Number}}
+                        lb::SVector{N,Td}, ub::SVector{N,Td}, order::NTuple{N,Int}) where {N,Td<:Real,T<:Union{StaticArray,Number}}
     length(x) == length(y) || throw(DimensionMismatch())
     length(x) ≥ prod(order .+ 1) || throw(ArgumentError("not enough data points $(length(x)) to fit to order $order"))
 
     # assemble rhs as matrix
-    Y = Array{float(eltype(T))}(undef, length(y), length(first(y)))
-    for j = 1:length(y)
-        Y[j,:] .= y[j + (firstindex(y)-1)]
-    end
+    Y = transpose(reshape(reinterpret(eltype(T), y), :, length(y)))
 
     # assemble lhs matrix
     A = chebvandermonde(x, lb, ub, order)
@@ -73,26 +70,31 @@ function chebregression(x::AbstractVector{SVector{N,Td}}, y::AbstractVector{T},
 end
 
 # convert arrays to vectors of svectors or scalars
-to_svectors(x::AbstractVector{<:Number}) = x
+to_svectors(x::AbstractVector{<:Union{Number,StaticArray}}) = x
 to_svectors(x::AbstractVector{<:Number}, ::Val{1}) = SVector{1}.(x)
-to_svectors(x::AbstractVector{<:SVector{N}}) where {N} = x
 to_svectors(x::AbstractVector{<:SVector{N}}, ::Val{N}) where {N} = x
 to_svectors(x::AbstractVector{<:AbstractVector{T}}, ::Val{N}=Val(length(first(x)))) where {T<:Number,N} =
     SVector{N,T}.(x)
 to_svectors(x::AbstractMatrix{T}, ::Val{N}=Val(size(x,2))) where {T<:Number,N} =
     SVector{N,T}[row for row in eachrow(x)]
+to_svectors(x::AbstractVector{<:AbstractArray{T}}, ::Val{S}=Val(size(first(x)))) where {T<:Number,S} =
+    SArray{Tuple{S...},T,length(S),prod(S)}.(x)
+to_svectors(x::AbstractArray{T}, ::Val{S}=Val(size(x)[2:end])) where {T<:Number,S} =
+    SArray{Tuple{S...},T,length(S),prod(S)}[slice for slice in eachslice(x, dims=1)]
+to_svectors(::AbstractArray{T,0}) where {T<:Number} =
+    throw(ArgumentError("0-dimensional arrays not accepted"))
 
 # normalize x and y arguments to vectors of svectors or scalars
-chebregression(x::AbstractVecOrMat, y::AbstractVecOrMat, lb::AbstractVector, ub::AbstractVector, order::NTuple{N}) where {N} =
+chebregression(x::AbstractVecOrMat, y::AbstractArray, lb::AbstractVector, ub::AbstractVector, order::NTuple{N}) where {N} =
     chebregression(to_svectors(x, Val{N}()), to_svectors(y), SVector{N}(lb), SVector{N}(ub), order)
 
-chebregression(x::AbstractVecOrMat, y::AbstractVecOrMat, order::NTuple{N}) where {N} =
+chebregression(x::AbstractVecOrMat, y::AbstractArray, order::NTuple{N}) where {N} =
     chebregression(to_svectors(x, Val{N}()), to_svectors(y), order)
 
 # accept scalar bounds and order in 1d case
-chebregression(x::AbstractVector{<:Real}, y::AbstractVecOrMat, lb::Real, ub::Real, order::Integer) =
+chebregression(x::AbstractVector{<:Real}, y::AbstractArray, lb::Real, ub::Real, order::Integer) =
     chebregression(x, y, SVector(lb), SVector(ub), (order,))
-chebregression(x::AbstractVector{<:Real}, y::AbstractVecOrMat, order::Integer) =
+chebregression(x::AbstractVector{<:Real}, y::AbstractArray, order::Integer) =
     chebregression(x, y, minimum(x), maximum(x), order)
 
 # construct lb and ub if omitted
@@ -101,7 +103,7 @@ chebregression(x::AbstractVector{<:SVector{N}}, y::AbstractVector, order::NTuple
 
 # promote arguments to common types
 function chebregression(x::AbstractVector{SVector{N,Tx}}, y::AbstractVector{Ty},
-    lb::SVector{N,Tlb}, ub::SVector{N,Tub}, order::NTuple{N,<:Integer}) where {N,Tx<:Real,Tlb<:Real,Tub<:Real,Ty<:Union{SVector,Number}}
+    lb::SVector{N,Tlb}, ub::SVector{N,Tub}, order::NTuple{N,<:Integer}) where {N,Tx<:Real,Tlb<:Real,Tub<:Real,Ty<:Union{StaticArray,Number}}
     Td = float(promote_type(Tx,Tub,Tlb))
     return chebregression(AbstractVector{SVector{N,Td}}(x), y, SVector{N,Td}(lb), SVector{N,Td}(ub), NTuple{N,Int}(order))
 end
@@ -110,7 +112,7 @@ end
     chebregression(x, y, [lb, ub,] order)
 
 Return a Chebyshev polynomial (`ChebPoly`) constructed by
-performing a least-square fit of Chebyshev polnomials of the
+performing a least-square fit of Chebyshev polynomials of the
 given `order`, where `x` are the coordinates of the data
 points `y`.  `lb` and `ub` are the lower and upper bounds,
 respectively, of the Chebyshev domain; these should normally
@@ -124,7 +126,7 @@ dimension), `lb` and `ub` are `N`-component vectors, and
 `x` is an array of `N`-component vectors (or a matrix with
 `N` columns, interpreted as the vector components).
 
-`y` can be a vector or numbers or a vector of vectors (for vector-
+`y` can be a vector of numbers or a vector of vectors (for vector-
 valued Chebyshev fits).  The latter case can also be input
 as a matrix whose columns are the vector componnents.  `size(x,1)`
 and `size(y,1)` must match, and must exceed `prod(order .+ 1)`.
