@@ -37,7 +37,7 @@ end
         interp0 = chebinterp(f.(x), lb, ub, tol=0)
         @test repr("text/plain", interp0) == "ChebPoly{2,$T,$T} order (48, 39) polynomial on [-0.3,0.9] × [0.1,1.2]"
         @test ndims(interp) == 2
-        x1 = T[0.2, 0.3]
+        x1 = T[0.2, 0.8] # not too close to boundary or test_frule can fail by taking a big FD step
         @test interp(x1) ≈ f(x1)
         @test interp(x1) ≈ interp0(x1) rtol=10eps(T)
         @test all(n -> n[1] < n[2], zip(size(interp.coefs), size(interp0.coefs)))
@@ -196,3 +196,4 @@ end
         @test interp(y) ≈ interp_ref(y)
     end
 end
+

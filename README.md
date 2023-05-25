@@ -1,6 +1,6 @@
 # FastChebInterp
 
-[![Build Status](https://travis-ci.org/stevengj/FastChebInterp.jl.svg?branch=master)](https://travis-ci.org/stevengj/FastChebInterp.jl)
+[![CI](https://github.com/JuliaMath/FastChebInterp.jl/workflows/CI/badge.svg)](https://github.com/JuliaMath/FastChebInterp.jl/actions?query=workflow%3ACI)
 
 Fast multidimensional Chebyshev interpolation on a hypercube (Cartesian-product)
 domain, using a separable (tensor-product) grid of Chebyshev interpolation points, as well as Chebyshev regression (least-square fits) from an arbitrary set of points.   In both cases we support arbitrary dimensionality, complex and vector-valued functions, and fast derivative and Jacobian computation.
@@ -63,7 +63,7 @@ julia> cos(2x + 3cos(4x)) * (2 - 12sin(4x)) # exact derivative
 ```
 
 Interpolation is most efficient and accurate if we evaluate our function at the points given by `chebpoints`.   However, we can also perform least-square polynomial fitting (in the Chebyshev basis, which is well behaved even at high degree) from an *arbitrary* set of points — this is useful if the points were specified externally, or if we want to "smooth" the data by fitting to a polynomial of lower degree than for interpolation.    For example, we can fit the same function above, again to a degree-200 Chebyshev polynomial, using 10000 *random* points in the domain:
-```jl 
+```jl
 xr = rand(10000) * 10 # 10000 uniform random points in [0, 10]
 c = chebregression(xr, f.(xr), 0, 10, 200) # fit to a degree-200 polynomial
 ```jl
