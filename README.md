@@ -66,6 +66,7 @@ Interpolation is most efficient and accurate if we evaluate our function at the 
 ```jl
 xr = rand(10000) * 10 # 10000 uniform random points in [0, 10]
 c = chebregression(xr, f.(xr), 0, 10, 200) # fit to a degree-200 polynomial
+```
 ```jl
 julia> maximum(@. abs(c(xx) - f(xx)))
 1.4655330320523241e-5
