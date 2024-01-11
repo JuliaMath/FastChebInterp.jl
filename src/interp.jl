@@ -86,7 +86,7 @@ function droptol(coefs::Array{<:Any,N}, tol::Real) where {N}
         end
         n
     end
-    return coefs[CartesianIndices(map(m -> 1:m, newsize))]
+    return coefs[CartesianIndices(map(n -> 1:n, newsize))]
 end
 
 function chebinterp(vals::AbstractArray{<:Any,N}, lb::SVector{N}, ub::SVector{N}; tol::Real=epsvals(vals)) where {N}
