@@ -78,7 +78,7 @@ function droptol(coefs::Array{<:Any,N}, tol::Real) where {N}
     # compute the new size along each dimension by checking
     # the maximum index that cannot be dropped along each dim
     newsize = ntuple(Val{N}()) do dim
-        n = size(coefs, dim)
+        n::Int = size(coefs, dim)
         while n > 1
             r = ntuple(i -> i == dim ? (n:n) : (1:size(coefs,i)), Val{N}())
             any(c -> infnorm(c) ≥ abstol, @view coefs[CartesianIndices(r)]) && break
@@ -86,7 +86,7 @@ function droptol(coefs::Array{<:Any,N}, tol::Real) where {N}
         end
         n
     end
-    return coefs[CartesianIndices(map(n -> 1:n, newsize))]
+    return coefs[CartesianIndices(map(m -> 1:m, newsize))]
 end
 
 function chebinterp(vals::AbstractArray{<:Any,N}, lb::SVector{N}, ub::SVector{N}; tol::Real=epsvals(vals)) where {N}
