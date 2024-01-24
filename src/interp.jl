@@ -80,7 +80,7 @@ function droptol(coefs::Array{<:Any,N}, tol::Real) where {N}
     newsize = ntuple(Val{N}()) do dim
         n = size(coefs, dim)
         while n > 1
-            r = ntuple(i -> i == dim ? (n:n) : (1:size(coefs,i)), Val{N}())
+            r = let n=n; ntuple(i -> i == dim ? (n:n) : (1:size(coefs,i)), Val{N}()); end
             any(c -> infnorm(c) ≥ abstol, @view coefs[CartesianIndices(r)]) && break
             n -= 1
         end

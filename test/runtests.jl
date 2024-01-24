@@ -149,3 +149,8 @@ end
     @test interp([0.1,0.22]) ≈ 3.2*cos(0.55)
     @test chebgradient(interp, [0.1,0.2])[2] == [2*cos(0.55), 0]
 end
+
+@testset "inference" begin
+    @inferred FastChebInterp.droptol(rand(5,5), 0.0)
+    @inferred chebinterp(rand(5,5), (0,0), (1,1))
+end
