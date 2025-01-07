@@ -2,12 +2,12 @@
 # to multidimensional Chebyshev polynomials.
 
 # assemble Chebyshev-Vandermonde matrix
-function _chebvandermonde(x::AbstractVector{SVector{N,Td}}, lb::SVector{N,Td}, ub::SVector{N,Td}, order::NTuple{N,Int}) where {N,Td<:Real}
+function _chebvandermonde(x::AbstractVector{SVector{N,Td}}, lb::SVector{N,Td}, ub::SVector{N,Td}, order::NTuple{N,Int}, extrapolate::Bool=false) where {N,Td<:Real}
     # (TODO: this algorithm is O(length(x) * length(c)²),
     #  but it should be possible to do it in linear time.
     #  However, the A \ Y step is also O(mn²), so this
     #  only affects the constant factor in the complexity.)
-    c = ChebPoly{N,Td,Td}(zeros(Td, order .+ 1), lb, ub)
+    c = ChebPoly{N,Td,Td}(zeros(Td, order .+ 1), lb, ub, extrapolate)
     A = Array{Td}(undef, length(x), length(c.coefs))
     for i = 1:length(c.coefs)
         c.coefs[i] = 1 # basis function
@@ -20,17 +20,17 @@ function _chebvandermonde(x::AbstractVector{SVector{N,Td}}, lb::SVector{N,Td}, u
 end
 
 # wrapper around _chebvandermonde for testing convenience
-chebvandermonde(x::AbstractVector{SVector{N,Td}}, lb::SVector{N,Td}, ub::SVector{N,Td}, order::NTuple{N,Int}) where {N,Td<:Real} =
-    _chebvandermonde(x, lb, ub, order)
+chebvandermonde(x::AbstractVector{SVector{N,Td}}, lb::SVector{N,Td}, ub::SVector{N,Td}, order::NTuple{N,Int}; extrapolate::Bool=false) where {N,Td<:Real} =
+    _chebvandermonde(x, lb, ub, order, extrapolate)
 
 # optimized method for 1d case
-function chebvandermonde(x::AbstractVector{SVector{1,Td}}, lb::SVector{1,Td}, ub::SVector{1,Td}, order::NTuple{1,Int}) where {Td<:Real}
+function chebvandermonde(x::AbstractVector{SVector{1,Td}}, lb::SVector{1,Td}, ub::SVector{1,Td}, order::NTuple{1,Int}; extrapolate::Bool=false) where {Td<:Real}
     lb1, ub1, o1 = lb[1], ub[1], order[1]
     o1 >= 0 || throw(ArgumentError("order $o1 must be nonnegative"))
     A = Array{Td}(undef, length(x), o1+1)
     for j = 1:length(x)
         xⱼ = (x[j][1] - lb1) * 2 / (ub1 - lb1) - 1
-        -1 ≤ xⱼ ≤ 1 || throw(ArgumentError("$(x[j][1]) not in domain [$lb1,$ub1]"))
+        extrapolate || -1 ≤ xⱼ ≤ 1 || throw(DomainError(x[j][1], "not in domain [$lb1,$ub1]"))
         A[j,1] = Tᵢ₋₂ = 1
         if o1 > 0
             Tᵢ₋₁ = xⱼ
@@ -50,7 +50,8 @@ chebvandermonde(x::AbstractVector{Td}, lb::Real, ub::Real, order::Integer) where
     return chebvandermonde(reinterpret(SVector{1,Td}, x), SVector{1,Td}(lb), SVector{1,Td}(ub), (Int(order),))
 
 function chebregression(x::AbstractVector{SVector{N,Td}}, y::AbstractVector{T},
-                        lb::SVector{N,Td}, ub::SVector{N,Td}, order::NTuple{N,Int}) where {N,Td<:Real,T<:Union{SVector,Number}}
+                        lb::SVector{N,Td}, ub::SVector{N,Td}, order::NTuple{N,Int};
+                        extrapolate::Bool=false) where {N,Td<:Real,T<:Union{SVector,Number}}
     length(x) == length(y) || throw(DimensionMismatch())
     length(x) ≥ prod(order .+ 1) || throw(ArgumentError("not enough data points $(length(x)) to fit to order $order"))
 
@@ -61,7 +62,7 @@ function chebregression(x::AbstractVector{SVector{N,Td}}, y::AbstractVector{T},
     end
 
     # assemble lhs matrix
-    A = chebvandermonde(x, lb, ub, order)
+    A = chebvandermonde(x, lb, ub, order; extrapolate)
 
     # least-square solution
     C = A \ Y
@@ -69,7 +70,7 @@ function chebregression(x::AbstractVector{SVector{N,Td}}, y::AbstractVector{T},
     # rearrange C into a ChebPoly
     Tc = typeof(zero(T) * one(eltype(Y)))
     coefs = Array{Tc,N}(reshape(reinterpret(Tc, vec(transpose(C))), order .+ 1))
-    return ChebPoly{N,Tc,Td}(coefs, lb, ub)
+    return ChebPoly{N,Tc,Td}(coefs, lb, ub, extrapolate)
 end
 
 # convert arrays to vectors of svectors or scalars
@@ -107,7 +108,7 @@ function chebregression(x::AbstractVector{SVector{N,Tx}}, y::AbstractVector{Ty},
 end
 
 """
-    chebregression(x, y, [lb, ub,] order)
+    chebregression(x, y, [lb, ub,] order; extrapolate=false)
 
 Return a Chebyshev polynomial (`ChebPoly`) constructed by
 performing a least-square fit of Chebyshev polnomials of the
@@ -128,5 +129,11 @@ dimension), `lb` and `ub` are `N`-component vectors, and
 valued Chebyshev fits).  The latter case can also be input
 as a matrix whose columns are the vector componnents.  `size(x,1)`
 and `size(y,1)` must match, and must exceed `prod(order .+ 1)`.
+
+If `extrapolate=true` is passed then the points `x` can lie
+outside the `[lb,ub]` domain (though this is not recommended),
+and the resulting Chebyshev polynomial `c(x)` can also be
+evaluated outside the domain.  Otherwise, an error is thrown
+for points outside the domain.
 """
 function chebregression end

@@ -89,17 +89,18 @@ function droptol(coefs::Array{<:Any,N}, tol::Real) where {N}
     return coefs[CartesianIndices(map(n -> 1:n, newsize))]
 end
 
-function chebinterp(vals::AbstractArray{<:Any,N}, lb::SVector{N}, ub::SVector{N}; tol::Real=epsvals(vals)) where {N}
+function chebinterp(vals::AbstractArray{<:Any,N}, lb::SVector{N}, ub::SVector{N};
+                    tol::Real=epsvals(vals), extrapolate::Bool=false) where {N}
     Td = promote_type(eltype(lb), eltype(ub))
     coefs = droptol(chebcoefs(vals), tol)
-    return ChebPoly{N,eltype(coefs),Td}(coefs, SVector{N,Td}(lb), SVector{N,Td}(ub))
+    return ChebPoly{N,eltype(coefs),Td}(coefs, SVector{N,Td}(lb), SVector{N,Td}(ub), extrapolate)
 end
 
 # precision for float(vals), handling arrays of numbers and arrays of arrays of numbers
 epsvals(vals) = eps(float(real(eltype(eltype(vals)))))
 
 """
-    chebinterp(vals, lb, ub; tol=eps)
+    chebinterp(vals, lb, ub; tol=eps, extrapolate=false)
 
 Given a multidimensional array `vals` of function values (at
 points corresponding to the coordinates returned by `chebpoints`),
@@ -119,12 +120,18 @@ The `tol` argument specifies a relative tolerance below which
 Chebyshev coefficients are dropped; it defaults to machine precision
 for the precision of `float(vals)`.   Passing `tol=0` will keep
 all coefficients up to the order passed to `chebpoints`.
+
+If `extrapolate=true` is passed, then the resulting Chebyshev polynomial
+can be evaluated outside the `[lb,ub]` domain; otherwise, an error is
+thrown for out-of-domain points.
 """
-chebinterp(vals::AbstractArray{<:Any,N}, lb, ub; tol::Real=epsvals(vals)) where {N} =
-    chebinterp(vals, SVector{N}(lb), SVector{N}(ub); tol=tol)
+chebinterp(vals::AbstractArray{<:Any,N}, lb, ub;
+    tol::Real=epsvals(vals), extrapolate::Bool=false) where {N} =
+    chebinterp(vals, SVector{N}(lb), SVector{N}(ub);
+               tol=tol, extrapolate=extrapolate)
 
 """
-    chebinterp_v1(vals, lb, ub; tol=eps)
+    chebinterp_v1(vals, lb, ub; tol=eps, extrapolate=false)
 
 Like `chebinterp(vals, lb, ub)`, but slices off the *first* dimension of `vals`
 and treats it as a vector of values to interpolate.
@@ -135,5 +142,7 @@ equivalently to calling `chebinterp` with a 31×32 array of 2-component vectors.
 (This function is mainly useful for calling from Python, where arrays
 of vectors are painful to construct.)
 """
-chebinterp_v1(vals::AbstractArray{T}, lb, ub; tol::Real=epsvals(vals)) where {T<:Number} =
-    chebinterp(dropdims(reinterpret(SVector{size(vals,1),T}, Array(vals)), dims=1), lb, ub; tol=tol)
+chebinterp_v1(vals::AbstractArray{T}, lb, ub;
+              tol::Real=epsvals(vals), extrapolate::Bool=false) where {T<:Number} =
+    chebinterp(dropdims(reinterpret(SVector{size(vals,1),T}, Array(vals)), dims=1),
+               lb, ub; tol=tol, extrapolate=extrapolate)

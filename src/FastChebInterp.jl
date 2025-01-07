@@ -38,6 +38,11 @@ struct ChebPoly{N,T,Td<:Real} <: Function
     coefs::Array{T,N} # chebyshev coefficients
     lb::SVector{N,Td} # lower/upper bounds
     ub::SVector{N,Td} #    of the domain
+    extrapolate::Bool # whether evaluation can extrapolate outside the domain
+
+    function ChebPoly{N,T,Td}(coefs, lb, ub, extrapolate::Bool=false) where {N,T,Td<:Real}
+        new(coefs, lb, ub, extrapolate)
+    end
 end
 
 function Base.show(io::IO, c::ChebPoly{N,T,Td}) where {N,T,Td}

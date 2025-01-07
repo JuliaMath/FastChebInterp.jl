@@ -32,7 +32,7 @@ function ChainRulesCore.frule((Δself, Δx), c::ChebPoly, x::AbstractVector)
         Δy = J * Δx′
 
         # dependence on coefs is linear
-        Δcoefs = typeof(c)(Δself.coefs, c.lb, c.ub)
+        Δcoefs = typeof(c)(Δself.coefs, c.lb, c.ub, c.extrapolate)
 
         return y, (y isa Number ? Δy[1] : Δy) + Δcoefs(x)
     end
