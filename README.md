@@ -33,7 +33,12 @@ We also have a function `chebregression(x, y, [lb, ub,], order)` that
 can perform multidimensional Chebyshev least-square fitting.  It
 returns a Chebyshev polynomial of a given `order` (tuple) fit
 to a set of points `x[i]` and values `y[i]`, optionally in a box
-with bounds `lb, ub` (which default to bounding box for `x`).
+with bounds `lb, ub` (which default to bounding box for `x`).   For fitting
+from arbitrary points `x` (not Chebyshev points) and/or for fitting
+noisy data, it is generally advisable
+for the number of points to be much larger than the number of polynomial
+terms `prod(order .+ 1)` to avoid [Runge phenomena](https://en.wikipedia.org/wiki/Runge%27s_phenomenon)
+and/or [overfitting](https://en.wikipedia.org/wiki/Overfitting).
 
 ### 1d Example
 
@@ -64,14 +69,14 @@ julia> cos(2x + 3cos(4x)) * (2 - 12sin(4x)) # exact derivative
 -13.700760631142602
 ```
 
-Interpolation is most efficient and accurate if we evaluate our function at the points given by `chebpoints`.   However, we can also perform least-square polynomial fitting (in the Chebyshev basis, which is well behaved even at high degree) from an *arbitrary* set of points — this is useful if the points were specified externally, or if we want to "smooth" the data by fitting to a polynomial of lower degree than for interpolation.    For example, we can fit the same function above, again to a degree-200 Chebyshev polynomial, using 10000 *random* points in the domain:
+Interpolation is most efficient and accurate if we evaluate our function at the points given by `chebpoints`.   However, we can also perform least-square polynomial fitting (in the Chebyshev basis, which is well behaved even at high degree if there are sufficiently many data points) from an *arbitrary* set of points — this is useful if the points were specified externally, or if we want to "smooth" the data by fitting to a polynomial of lower degree than for interpolation.    For example, we can fit the same function above, again to a degree-200 Chebyshev polynomial, using 10000 *random* points in the domain:
 ```jl
 xr = rand(10000) * 10 # 10000 uniform random points in [0, 10]
-c = chebregression(xr, f.(xr), 0, 10, 200) # fit to a degree-200 polynomial
+cr = chebregression(xr, f.(xr), 0, 10, 200) # fit to a degree-200 polynomial
 ```
 which gives:
 ```jl
-julia> maximum(@. abs(c(xx) - f(xx)))
+julia> maximum(@. abs(cr(xx) - f(xx)))
 1.4655330320523241e-5
 ```
 
