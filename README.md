@@ -50,7 +50,7 @@ f(x) = sin(2x + 3cos(4x))
 x = chebpoints(200, 0, 10)
 c = chebinterp(f.(x), 0, 10)
 ```
-We can then compare the "exact" function and its derivative at a set of points:
+We can then compare the exact function and its interpolant at a set of points:
 ```jl
 julia> xx = 0:0.1:10;
 
