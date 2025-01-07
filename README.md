@@ -57,7 +57,7 @@ julia> xx = 0:0.1:10;
 julia> maximum(@. abs(c(xx) - f(xx)))
 2.6336643132285342e-5
 ```
-and we see that the interpolant `c` matches `f` to about five decimal digits.
+and we see that the degree-10 interpolant `c` matches `f` to about five decimal digits.
 
 The function `chebgradient` returns both the interpolant and its derivative, e.g. at `x = 1.234`, and we can compare it to the exact values
 ```jl
