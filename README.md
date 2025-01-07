@@ -125,6 +125,21 @@ julia> [cos(1.2 + cos(3.4)), cos(1.2 + cos(3.4)) * -sin(3.4)] # exact gradient
 ```
 and we see that the derivative matches to high accuracy.
 
+We can also do Chebyshev regression, e.g. from 500 random points distributed uniformly in our domain `[1,2] × [3,4]`:
+```jl
+julia> using StaticArrays
+
+julia> xrand = [StaticArrays.rand(2) + SVector(1,3) for _ in 1:500] # uniform in [1,2] × [3,4]
+
+julia> crand = chebregression(xrand, g.(xrand), (10,20))
+```
+which again produces an accurate interpolant since the function is so smooth and slowly varying, albeit employing more data points
+than were required by `chebinterp`:
+```jl
+julia> g([1.2, 3.4]) - crand([1.2, 3.4])
+-2.6645352591003757e-15
+```
+
 ## Related packages
 
 This package was inspired by functionality in [ChebyshevApprox.jl](https://github.com/RJDennis/ChebyshevApprox.jl), but was rewritten in order to get more performance and other features.  The [ApproxFun.jl](https://github.com/JuliaApproximation/ApproxFun.jl) package also performs Chebyshev interpolation and many other tasks.   [BasicInterpolators.jl](https://github.com/markmbaum/BasicInterpolators.jl) also provides Chebyshev interpolation in 1d and 2d, and [Surrogates.jl](https://github.com/SciML/Surrogates.jl) provides some other interpolation schemes.
