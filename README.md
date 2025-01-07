@@ -2,8 +2,10 @@
 
 [![CI](https://github.com/JuliaMath/FastChebInterp.jl/workflows/CI/badge.svg)](https://github.com/JuliaMath/FastChebInterp.jl/actions?query=workflow%3ACI)
 
-Fast multidimensional Chebyshev interpolation on a hypercube (Cartesian-product)
+Fast multidimensional Chebyshev polynomial interpolation on a hypercube (Cartesian-product)
 domain, using a separable (tensor-product) grid of Chebyshev interpolation points, as well as Chebyshev regression (least-square fits) from an arbitrary set of points.   In both cases we support arbitrary dimensionality, complex and vector-valued functions, and fast derivative and Jacobian computation.
+
+[Chebyshev polynomials](https://en.wikipedia.org/wiki/Chebyshev_polynomials) are simply a well-behaved basis for polynomial functions in a given finite interval, so you can view FastChebInterp as a robust and convenient way to do perform multidimensional polynomial fitting and interpolation.   Fitting to high-degree polynomials can be problematic unless your number of data points is much greater than the product of the polynomial degrees (the number of polynomial terms), but if you have a [smooth function](https://en.wikipedia.org/wiki/Smoothness) and interpolate from specially chosen points — the Chebyshev points, given by the function `chebpoints` below — then it is very well behaved, and in fact converges exponentially fast for analytic functions.  (See, for example, the book [*Approximation Theory and Approximation Practice*](https://www.chebfun.org/ATAP/) by Trefethen.)
 
 ## Usage
 
