@@ -33,7 +33,9 @@ We also have a function `chebregression(x, y, [lb, ub,], order)` that
 can perform multidimensional Chebyshev least-square fitting.  It
 returns a Chebyshev polynomial of a given `order` (tuple) fit
 to a set of points `x[i]` and values `y[i]`, optionally in a box
-with bounds `lb, ub` (which default to bounding box for `x`).   For fitting
+with bounds `lb, ub` (which default to bounding box for `x`).
+
+For fitting
 from arbitrary points `x` (not Chebyshev points) and/or for fitting
 noisy data, it is generally advisable
 for the number of points to be much larger than the number of polynomial
