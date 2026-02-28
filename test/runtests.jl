@@ -29,6 +29,7 @@ Random.seed!(314159) # make chainrules tests deterministic
         @test roots(chebinterp(x -> x - 0.1, 10, 0,1)) ≈ [0.1]
         @test roots(chebinterp(x -> (x - 0.1)*(x-0.2), 10, 0,1)) ≈ [0.1, 0.2]
         @test roots(chebinterp(cos, 10000, 0, 1000))/pi ≈ (0:317) .+ T(0.5)
+        @test colleague_matrix(chebinterp(x -> (x - 0.1)*(x-0.2), 10, 0,1)) ≈ T[0.5 -0.24; 0.5 -0.2]
     end
 end
 
