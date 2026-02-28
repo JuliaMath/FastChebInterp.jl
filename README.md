@@ -31,6 +31,9 @@ The FastChebInterp package also supports complex and vector-valued functions `f`
 the latter case, `c(y)` returns a vector of interpolants, and one can use `chebjacobian(c,y)`
 to compute the tuple `(c(y), J(y))` of the interpolant and its Jacobian matrix at `y`.
 
+There is also a function `roots(c)` to return an array of the real roots of `c` on the interval `[lb, ub]`,
+computed efficiently by a ["colleague"-matrix method (combined with recursive domain decomposition)](https://epubs.siam.org/doi/10.1137/1.9781611975949.ch18).
+
 ### Regression from arbitrary points
 
 We also have a function `chebregression(x, y, [lb, ub,], order)` that

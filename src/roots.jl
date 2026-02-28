@@ -63,6 +63,18 @@ if isdefined(LinearAlgebra.LAPACK, :hseqr!)
 end
 hesseneigvals!(C::UpperHessenberg{T,Matrix{T}}) where {T} = eigvals!(C.data)
 
+"""
+    roots(c::ChebPoly{1,<:Real}; tol=5eps, maxsize::Integer=50)
+
+Returns an array of the real roots of `c` on the interval `[lb,ub]` (the lower and
+upper bounds of the interpolation domain).
+
+Uses a colleague-matrix method combined with recursive subdivision of the domain
+to keep the maximum matrix size `≤ maxsize`, following an algorithm described by
+Trefethen (*Approximation Theory and Approximation Practice*, ch. 18).  The `tol`
+argument is a relative tolerance for dropping small polynomial coefficients, defaulting
+to `5eps` where `eps` is the precision of `c`.
+"""
 function roots(c::ChebPoly{1,<:Real}; tol::Real=5*epsvals(c.coefs), maxsize::Integer=50)
     tol > 0 || throw(ArgumentError("tolerance $tol for truncating coefficients must be > 0"))
     abstol = sum(abs, c.coefs) * tol # absolute tolerance = L1 norm * tol
