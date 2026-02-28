@@ -25,11 +25,13 @@ Random.seed!(314159) # make chainrules tests deterministic
         test_frule(interp, x1, rtol=sqrt(eps(T)), atol=sqrt(eps(T)))
         test_rrule(interp, x1, rtol=sqrt(eps(T)), atol=sqrt(eps(T)))
 
-        @test roots(chebinterp(x -> 1.1, 10, 0,1)) ≈ Float64[]
-        @test roots(chebinterp(x -> x - 0.1, 10, 0,1)) ≈ [0.1]
-        @test roots(chebinterp(x -> (x - 0.1)*(x-0.2), 10, 0,1)) ≈ [0.1, 0.2]
-        @test roots(chebinterp(cos, 10000, 0, 1000))/pi ≈ (0:317) .+ T(0.5)
-        @test colleague_matrix(chebinterp(x -> (x - 0.1)*(x-0.2), 10, 0,1)) ≈ T[0.5 -0.24; 0.5 -0.2]
+        @test roots(chebinterp(x -> 1.1, 0,1)) ≈ Float64[]
+        @test roots(chebinterp(x -> x - 0.1, 0,1)) ≈ [0.1]
+        p = chebinterp(x -> (x - 0.1)*(x-0.2), 0,1)
+        @test length(p.coefs) == 3 # degree-2 polynomial
+        @test roots(p) ≈ [0.1, 0.2]
+        @test roots(chebinterp(cos, 10^4, 0, 1000))/pi ≈ (0:317) .+ T(0.5)
+        @test colleague_matrix(chebinterp(x -> (x - 0.1)*(x-0.2), 0,1)) ≈ T[0.5 -0.24; 0.5 -0.2]
     end
 end
 
@@ -42,13 +44,16 @@ end
         @test eltype(x) == SVector{2,T}
         interp = chebinterp(f.(x), lb, ub)
         interp2 = chebinterp(f, (48,39), lb, ub)
+        interp3 = chebinterp(f, lb, ub)
+        @test all(size(interp3.coefs) .< (40,30))
+        @test all(size(chebinterp(f, lb, ub, max_order=(18, 4)).coefs) .≤ (19,5))
         @test interp isa FastChebInterp.ChebPoly{2,T,T}
         @test interp2.coefs ≈ interp.coefs
         interp0 = chebinterp(f.(x), lb, ub, tol=0)
         @test repr("text/plain", interp0) == "ChebPoly{2,$T,$T} order (48, 39) polynomial on [-0.3,0.9] × [0.1,1.2]"
         @test ndims(interp) == 2
         x1 = T[0.2, 0.8] # not too close to boundary or test_frule can fail by taking a big FD step
-        @test interp(x1) ≈ f(x1)
+        @test interp(x1) ≈ f(x1) ≈ interp3(x1)
         @test interp(x1) ≈ interp0(x1) rtol=10eps(T)
         @test all(n -> n[1] < n[2], zip(size(interp.coefs), size(interp0.coefs)))
         @test chebgradient(interp, x1) ≈′ (f(x1), ∇f(x1))

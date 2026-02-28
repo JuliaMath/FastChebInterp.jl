@@ -37,6 +37,8 @@ chebpoints(order::Integer, lb::Real, ub::Real) =
 
 # O(n log n) method to compute Chebyshev coefficients
 function chebcoefs(vals::AbstractArray{<:Number,N}) where {N}
+    all(isfinite, vals) || throw(DomainError("non-finite interpolant value"))
+
      # type-I DCT, except for size-1 dimensions where we want identity
     kind = map(n -> n > 1 ? FFTW.REDFT00 : FFTW.DHT, size(vals))
     coefs = FFTW.r2r(vals, kind)
@@ -73,7 +75,7 @@ infnorm(x::Number) = abs(x)
 infnorm(x::AbstractArray) = maximum(abs, x)
 
 function droptol(coefs::Array{<:Any,N}, tol::Real) where {N}
-    abstol = sum(infnorm, coefs) * tol # absolute tolerance = L1 norm * tol
+    abstol = maximum(infnorm, coefs) * tol # absolute tolerance = Linf norm * tol
     all(c -> infnorm(c) ≥ abstol, coefs) && return coefs # nothing to drop
 
     # compute the new size along each dimension by checking
@@ -103,6 +105,7 @@ epsbounds(lb, ub) = eps(float(real(promote_type(eltype(lb), eltype(ub)))))
 """
     chebinterp(vals, lb, ub; tol=eps)
     chebinterp(f::Function, order, lb, ub; tol=eps)
+    chebinterp(f::Function, lb, ub; tol=eps, min_order=(8,..), max_order=(typemax(Int),...))
 
 Given a multidimensional array `vals` of function values (at
 points corresponding to the coordinates returned by `chebpoints`),
@@ -114,6 +117,12 @@ Alternatively, one can supply a function `f` and an `order` (an integer
 or a tuple of integers), and it will call [`chebpoints`](@ref) for you
 to obtain the Chebyshev points and then compute `vals` by evaluating
 `f` at these points.
+
+If a function `f` is supplied and the `order` argument is omitted, it will adaptively
+determine the order by repeatedly doubling it until `tol` is achieved
+or `max_order` is reached, starting at `min_order` (which defaults to `8` or
+a tuple of `8`s in each dimension; this might need to be increased for
+highly oscillatory functions).   This feature is best used for smooth functions.
 
 This object `c = chebinterp(...)` can be used to
 evaluate the interpolating polynomial at a point `x` via
@@ -146,6 +155,11 @@ of vectors are painful to construct.)
 chebinterp_v1(vals::AbstractArray{T}, lb, ub; tol::Real=epsvals(vals)) where {T<:Number} =
     chebinterp(dropdims(reinterpret(SVector{size(vals,1),T}, Array(vals)), dims=1), lb, ub; tol=tol)
 
+#####################################################################################################
+# supplying the function rather than the values
+
+# supplying both function and order:
+
 chebinterp(f::Function, order::NTuple{N,Int}, lb::SVector{N,<:Real}, ub::SVector{N,<:Real}; tol::Real=epsbounds(lb,ub)) where {N} =
     chebinterp(map(f, chebpoints(order, lb, ub)), lb, ub; tol=tol)
 
@@ -154,3 +168,36 @@ chebinterp(f::Function, order::NTuple{N,Int}, lb::AbstractArray{<:Real}, ub::Abs
 
 chebinterp(f::Function, order::Integer, lb::Real, ub::Real; tol::Real=epsbounds(lb,ub)) =
     chebinterp(x -> f(@inbounds x[1]), (Int(order),), SVector(lb), SVector(ub); tol=tol)
+
+## adaptively determine the order by repeated doublying, ala chebfun or approxfun:
+
+function chebinterp(f::Function, lb::SVector{N,<:Real}, ub::SVector{N,<:Real};
+                    tol::Real=5epsbounds(lb,ub),
+                    min_order::NTuple{N,Int}=ntuple(i->8,Val{N}()),
+                    max_order::NTuple{N,Int}=ntuple(i->typemax(Int),Val{N}())) where {N}
+    tol > 0 || throw(ArgumentError("tolerance $tol must be > 0"))
+    all(min_order .> 0) || throw(ArgumentError("minimum order $min_order must be > 0"))
+    all(max_order .>= 0) || throw(ArgumentError("maximum order $max_order must be ≥ 0"))
+    order = min.(min_order, max_order)
+    while true
+        # in principle we could re-use function evaluations when doubling the order,
+        # but that would greatly complicate the code and only saves a factor of 2
+        c = chebinterp(map(f, chebpoints(order, lb, ub)), lb, ub; tol=tol)
+        order_done = (size(c.coefs) .- 1 .< order) .| (order .== max_order)
+        all(order_done) && return c
+        order = ifelse.(order_done, order, min.(max_order, order .* 2))
+    end
+end
+
+function chebinterp(f::Function, lb::AbstractArray{<:Real}, ub::AbstractArray{<:Real};
+                    tol::Real=5epsbounds(lb,ub),
+                    min_order=fill(8, length(lb)), max_order=fill(typemax(Int), length(lb)))
+    N = length(lb)
+    N == length(ub) == length(min_order) == length(max_order) || throw(DimensionMismatch("dimensions must all == $N"))
+    Base.require_one_based_indexing(min_order, max_order)
+    chebinterp(f, SVector{N}(lb), SVector{N}(ub);
+               tol=tol, min_order=ntuple(i -> Int(min_order[i]), N), max_order=ntuple(i -> Int(max_order[i]), N))
+end
+
+chebinterp(f::Function, lb::Real, ub::Real; tol::Real=5epsbounds(lb,ub), min_order::Integer=8, max_order::Integer=typemax(Int)) =
+    chebinterp(x -> f(@inbounds x[1]), SVector(lb), SVector(ub); tol=tol, min_order=(Int(min_order),), max_order=(Int(max_order),))
