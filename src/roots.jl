@@ -87,6 +87,7 @@ to `5eps` where `eps` is the precision of `c`.
 """
 function roots(c::ChebPoly{1,<:Real}; tol::Real=5*epsvals(c.coefs), maxsize::Integer=50)
     tol > 0 || throw(ArgumentError("tolerance $tol for truncating coefficients must be > 0"))
+    maxsize > 0 || throw(ArgumentError("maxsize $maxsize must be > 0"))
     abstol = sum(abs, c.coefs) * tol # absolute tolerance = L1 norm * tol
     n = something(findlast(c -> abs(c) ≥ abstol, c.coefs), 1)
     if n <= maxsize
