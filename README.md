@@ -17,7 +17,11 @@ x = chebpoints(order, lb, ub) # an array of `SVector` from [StaticArrays.jl](htt
 c = chebinterp(f.(x), lb, ub)
 ```
 and then evaluate the interpolant for a point `y` (a vector)
-via `c(y)`.
+via `c(y)`.  Alternatively, you can combine `chebpoints` and `chebinterp` into a single call:
+```jl
+c = chebinterp(f, order, lb, ub)
+```
+which evaluates the given function at Chebyshev points for you.
 
 We also provide a function `chebgradient(c,y)` that returns a tuple `(c(y), ∇c(y))` of
 the interpolant and its gradient at a point `y`.  (You can also use automatic differentiation, e.g. via the [ForwardDiff.jl package](https://github.com/JuliaDiff/ForwardDiff.jl),
@@ -49,6 +53,7 @@ Here is an example interpolating the (highly oscillatory) 1d function `f(x) = si
 f(x) = sin(2x + 3cos(4x))
 x = chebpoints(200, 0, 10)
 c = chebinterp(f.(x), 0, 10)
+# alternatively, c = chebinterp(f, 200, 0, 10)
 ```
 We can then compare the exact function and its interpolant at a set of points:
 ```jl
@@ -90,6 +95,7 @@ g(x) = sin(x[1] + cos(x[2]))
 lb, ub = [1,3], [2, 4] # lower and upper bounds of the domain, respectively
 x = chebpoints((10,20), lb, ub)
 c = chebinterp(g.(x), lb, ub)
+# alternatively, c = chebinterp(g, (10,20), lb, ub)
 ```
 Let's evaluate the interpolant at an arbitrary point `(1.2, 3.4)` and compare it to the exact value:
 ```jl
