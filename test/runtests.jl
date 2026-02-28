@@ -24,6 +24,11 @@ Random.seed!(314159) # make chainrules tests deterministic
         @test chebgradient(interp, x1) ≈′ (f(x1), f′(x1))
         test_frule(interp, x1, rtol=sqrt(eps(T)), atol=sqrt(eps(T)))
         test_rrule(interp, x1, rtol=sqrt(eps(T)), atol=sqrt(eps(T)))
+
+        @test roots(chebinterp(x -> 1.1, 10, 0,1)) ≈ Float64[]
+        @test roots(chebinterp(x -> x - 0.1, 10, 0,1)) ≈ [0.1]
+        @test roots(chebinterp(x -> (x - 0.1)*(x-0.2), 10, 0,1)) ≈ [0.1, 0.2]
+        @test roots(chebinterp(cos, 10000, 0, 1000))/pi ≈ (0:317) .+ T(0.5)
     end
 end
 

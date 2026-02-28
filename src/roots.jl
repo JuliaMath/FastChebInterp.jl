@@ -66,7 +66,7 @@ hesseneigvals!(C::UpperHessenberg{T,Matrix{T}}) where {T} = eigvals!(C.data)
 """
     roots(c::ChebPoly{1,<:Real}; tol=5eps, maxsize::Integer=50)
 
-Returns an array of the real roots of `c` on the interval `[lb,ub]` (the lower and
+Returns a sorted array of the real roots of `c` on the interval `[lb,ub]` (the lower and
 upper bounds of the interpolation domain).
 
 Uses a colleague-matrix method combined with recursive subdivision of the domain
