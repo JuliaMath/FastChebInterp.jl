@@ -72,7 +72,7 @@ infnorm(x::Number) = abs(x)
 infnorm(x::AbstractArray) = maximum(abs, x)
 
 function droptol(coefs::Array{<:Any,N}, tol::Real) where {N}
-    abstol = maximum(infnorm, coefs) * tol # absolute tolerance
+    abstol = sum(infnorm, coefs) * tol # absolute tolerance = L1 norm * tol
     all(c -> infnorm(c) ≥ abstol, coefs) && return coefs # nothing to drop
 
     # compute the new size along each dimension by checking
