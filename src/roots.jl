@@ -29,8 +29,12 @@ function _colleague_matrix(coefs::AbstractVector{<:Number})
     end
 end
 
-if !isdefined(Base, :diagview) # added in Julia 1.12
-    diagview(A::AbstractMatrix, k::Integer=0) = @view A[diagind(A, k, IndexStyle(A))]
+
+if !isdefined(LinearAlgebra, :diagview) # added in Julia 1.12
+    if !isdefined(LinearAlgebra, :diagind)
+        diagind(A::Matrix) = range(1, step=size(A,1)+1, length=min(size(A)...))
+    end
+    diagview(A::AbstracMatrixMatrix) = @view A[diagind(A)]
 end
 
 function _colleague_matrix(coefs::AbstractVector{<:Number}, lb::Real, ub::Real)
