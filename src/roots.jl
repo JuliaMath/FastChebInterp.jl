@@ -12,7 +12,7 @@ export colleague_matrix, roots
 # trailing zero coefficients have already been dropped.
 function _colleague_matrix(coefs::AbstractVector{<:Number})
     n = length(coefs)
-    n <= 1 && return float(eltype(coefs))[;;] # 0×0 case (no roots)
+    n <= 1 && return zeros(float(eltype(coefs)),0,0) # 0×0 case (no roots)
     iszero(coefs[end]) && throw(ArgumentError("trailing coefficient must be nonzero"))
 
     if n == 2 # trivial 1×1 (degree 1) case
