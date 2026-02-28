@@ -185,7 +185,7 @@ function chebinterp(f::Function, lb::SVector{N,<:Real}, ub::SVector{N,<:Real};
         c = chebinterp(map(f, chebpoints(order, lb, ub)), lb, ub; tol=tol)
         order_done = (size(c.coefs) .- 1 .< order) .| (order .== max_order)
         all(order_done) && return c
-        order = ifelse.(order_done, order, min.(max_order, order .* 2))
+        order = ifelse.(order_done, order, min.(max_order, nextpow.(2, order .* 2)))
     end
 end
 
