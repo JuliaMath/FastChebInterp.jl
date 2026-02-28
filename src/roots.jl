@@ -12,11 +12,13 @@ export colleague_matrix, roots
 # trailing zero coefficients have already been dropped.
 function _colleague_matrix(coefs::AbstractVector{<:Number})
     n = length(coefs)
-    n <= 1 && return zeros(float(eltype(coefs)),0,0) # 0×0 case (no roots)
+    n <= 1 && return Matrix{float(eltype(coefs))}(undef,0,0) # 0×0 case (no roots)
     iszero(coefs[end]) && throw(ArgumentError("trailing coefficient must be nonzero"))
 
     if n == 2 # trivial 1×1 (degree 1) case
-        return [float(-coefs[1])/coefs[2];;]
+        C = Matrix{float(eltype(coefs))}(undef,1,1)
+        C[1,1] = float(-coefs[1])/coefs[2]
+        return C
     else
         # colleague matrix, transposed to make it upper-Hessenberg (which doesn't change eigenvalues)
         halves = fill(one(float(eltype(coefs)))/2, n-2)
