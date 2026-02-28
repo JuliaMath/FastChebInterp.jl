@@ -6,8 +6,10 @@ function chebpoint(i::CartesianIndex{N}, order::NTuple{N,Int}, lb::SVector{N}, u
     @. lb + (1 + cos(T($SVector($Tuple(i))) * π / $SVector(ifelse.(iszero.(order),2,order)))) * (ub - lb) * $(T(0.5))
 end
 
-chebpoints(order::NTuple{N,Int}, lb::SVector{N}, ub::SVector{N}) where {N} =
-    [chebpoint(i,order,lb,ub) for i in CartesianIndices(map(n -> n==0 ? (1:1) : (0:n), order))]
+function chebpoints(order::NTuple{N,Int}, lb::SVector{N}, ub::SVector{N}) where {N}
+    all(≥(0), order) || throw(ArgumentError("invalid negative order $order"))
+    return [chebpoint(i,order,lb,ub) for i in CartesianIndices(map(n -> n==0 ? (1:1) : (0:n), order))]
+end
 
 """
     chebpoints(order, lb, ub)
@@ -26,13 +28,12 @@ the order in that direction.)
 function chebpoints(order, lb, ub)
     N = length(order)
     N == length(lb) == length(ub) || throw(DimensionMismatch())
-    all(≥(0), order) || throw(ArgumentError("invalid negative order $order"))
     return chebpoints(NTuple{N,Int}(order), SVector{N}(lb), SVector{N}(ub))
 end
 
 # return array of scalars in 1d
 chebpoints(order::Integer, lb::Real, ub::Real) =
-    first.(chebpoints(order, SVector(lb), SVector(ub)))
+    first.(chebpoints((Int(order),), SVector(lb), SVector(ub)))
 
 # O(n log n) method to compute Chebyshev coefficients
 function chebcoefs(vals::AbstractArray{<:Number,N}) where {N}
@@ -97,9 +98,11 @@ end
 
 # precision for float(vals), handling arrays of numbers and arrays of arrays of numbers
 epsvals(vals) = eps(float(real(eltype(eltype(vals)))))
+epsbounds(lb, ub) = eps(float(real(promote_type(eltype(lb), eltype(ub)))))
 
 """
     chebinterp(vals, lb, ub; tol=eps)
+    chebinterp(f::Function, order, lb, ub; tol=eps)
 
 Given a multidimensional array `vals` of function values (at
 points corresponding to the coordinates returned by `chebpoints`),
@@ -107,7 +110,12 @@ and arrays `lb` and `ub` of the lower and upper coordinate bounds
 of the domain in each direction, returns a Chebyshev interpolation
 object (a `ChebPoly`).
 
-This object `c = chebinterp(vals, lb, ub)` can be used to
+Alternatively, one can supply a function `f` and an `order` (an integer
+or a tuple of integers), and it will call [`chebpoints`](@ref) for you
+to obtain the Chebyshev points and then compute `vals` by evaluating
+`f` at these points.
+
+This object `c = chebinterp(...)` can be used to
 evaluate the interpolating polynomial at a point `x` via
 `c(x)`.
 
@@ -137,3 +145,12 @@ of vectors are painful to construct.)
 """
 chebinterp_v1(vals::AbstractArray{T}, lb, ub; tol::Real=epsvals(vals)) where {T<:Number} =
     chebinterp(dropdims(reinterpret(SVector{size(vals,1),T}, Array(vals)), dims=1), lb, ub; tol=tol)
+
+chebinterp(f::Function, order::NTuple{N,Int}, lb::SVector{N,<:Real}, ub::SVector{N,<:Real}; tol::Real=epsbounds(lb,ub)) where {N} =
+    chebinterp(map(f, chebpoints(order, lb, ub)), lb, ub; tol=tol)
+
+chebinterp(f::Function, order::NTuple{N,Int}, lb::AbstractArray{<:Real}, ub::AbstractArray{<:Real}; tol::Real=epsbounds(lb,ub)) where {N} =
+    chebinterp(f, order, SVector{N}(lb), SVector{N}(ub); tol=tol)
+
+chebinterp(f::Function, order::Integer, lb::Real, ub::Real; tol::Real=epsbounds(lb,ub)) =
+    chebinterp(x -> f(@inbounds x[1]), (Int(order),), SVector(lb), SVector(ub); tol=tol)
