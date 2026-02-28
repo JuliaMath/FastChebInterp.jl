@@ -21,7 +21,17 @@ via `c(y)`.  Alternatively, you can combine `chebpoints` and `chebinterp` into a
 ```jl
 c = chebinterp(f, order, lb, ub)
 ```
-which evaluates the given function at Chebyshev points for you.
+which evaluates the given function at Chebyshev points for you.  In fact, you can omit the `order`
+and simply call
+```jl
+c = chebinterp(f, lb, ub)
+```
+and it will adaptively double the order until a given relative tolerance is attained
+(specified by the optional `tol` keyword argument, default to `5*eps` in the
+given floating-point precision).  The starting order for the doubling can be specified
+by a `min_order` keyword (which defaults to `8` in each dimension), and a maximum
+can be specified by the `max_order` keyword.  This feature is best for *smooth* functions.
+(More sophisticated versions of this idea are implemented by [ApproxFun.jl](https://github.com/JuliaApproximation/ApproxFun.jl).)
 
 We also provide a function `chebgradient(c,y)` that returns a tuple `(c(y), ∇c(y))` of
 the interpolant and its gradient at a point `y`.  (You can also use automatic differentiation, e.g. via the [ForwardDiff.jl package](https://github.com/JuliaDiff/ForwardDiff.jl),
