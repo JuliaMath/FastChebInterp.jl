@@ -73,7 +73,7 @@ function roots(c::ChebPoly{1,<:Real}; tol::Real=5*epsvals(c.coefs), maxsize::Int
         return filter_roots(c, λ)
     else
         # roughly halve the domain, constructing new Chebyshev polynomials on each half, and
-        # call roots recursively.  as for chebfun, we split at an arbitrary point 0.004849834917525
+        # call roots recursively.  Following chebfun, we split at an arbitrary point 0.004849834917525
         # on [-1,1] rather than at 0 to avoid introducing additional spurious roots (since 0 is
         # often a special point by symmetry).
         split = oftype(tol, 1.004849834917525) * ((c.ub[1] - c.lb[1])/2) + c.lb[1]
