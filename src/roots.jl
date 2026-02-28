@@ -29,6 +29,10 @@ function _colleague_matrix(coefs::AbstractVector{<:Number})
     end
 end
 
+if !isdefined(Base, :diagview) # added in Julia 1.12
+    diagview(A::AbstractMatrix, k::Integer=0) = @view A[diagind(A, k, IndexStyle(A))]
+end
+
 function _colleague_matrix(coefs::AbstractVector{<:Number}, lb::Real, ub::Real)
     C = _colleague_matrix(coefs)
     # scale and shift from [-1,1] to [lb,ub] via C * (ub-lb)/2 + (ub+lb)/2 * I
@@ -56,7 +60,7 @@ function filter_roots(c::ChebPoly{1,<:Real}, roots::AbstractVector{<:Number})
     return [ clamp(real(r), lb, ub) for r in roots if abs(imag(r)) < htol && lb - htol <= real(r) <= ub + htol ]
 end
 
-if isdefined(LinearAlgebra.LAPACK, :hseqr!)
+if isdefined(LinearAlgebra.LAPACK, :hseqr!) # added in Julia 1.10
     # see also LinearAlgebra.jl#1557 - optimized in-place eigenvalues for upper-Hessenberg colleague matrix
     function hesseneigvals!(C::UpperHessenberg{T,Matrix{T}}) where {T<:Union{LinearAlgebra.BlasReal, LinearAlgebra.BlasComplex}}
         ilo, ihi, _ = LinearAlgebra.LAPACK.gebal!('S', triu!(C.data, -1))
