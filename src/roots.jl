@@ -71,7 +71,7 @@ if isdefined(LinearAlgebra.LAPACK, :hseqr!) # added in Julia 1.10
         return sort!(LinearAlgebra.LAPACK.hseqr!('E', 'N', 1, size(C,1), C.data, C.data)[3], by=reim)
     end
 end
-hesseneigvals!(C::UpperHessenberg{T,Matrix{T}}) where {T} = eigvals!(C.data)
+hesseneigvals!(C::UpperHessenberg{T,Matrix{T}}) where {T} = eigvals!(triu!(C.data, -1))
 
 """
     roots(c::ChebPoly{1,<:Real}; tol=5eps, maxsize::Integer=50)
