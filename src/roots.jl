@@ -102,8 +102,8 @@ function roots(c::ChebPoly{1,<:Real}; tol::Real=5*epsvals(c.coefs), maxsize::Int
 
         # pick a fast order for the recursive DCT, should be highly composite, say 2^m
         order = nextpow(2, n-1)
-        c1 = chebinterp(c, order, c.lb[1], split; tol=tol)
-        c2 = chebinterp(c, order, split, c.ub[1]; tol=tol)
+        c1 = chebinterp(c, order, c.lb[1], split; tol=2tol)
+        c2 = chebinterp(c, order, split, c.ub[1]; tol=2tol)
         return vcat(roots(c1; tol=2tol, maxsize=maxsize), roots(c2; tol=2tol, maxsize=maxsize))
     end
 end
