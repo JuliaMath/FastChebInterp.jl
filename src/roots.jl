@@ -6,11 +6,11 @@
 # code: https://github.com/chebfun/chebfun/blob/7574c77680d7e82b79626300bf255498271a72df/%40chebtech/roots.m
 
 using LinearAlgebra
-export colleague_matrix
+export colleague_matrix, roots
 
 # colleague matrix for 1d array of Chebyshev coefficients, assuming
 # trailing zero coefficients have already been dropped.
-function _colleague_matrix(coefs::AbstractVector{<:Real})
+function _colleague_matrix(coefs::AbstractVector{<:Number})
     n = length(coefs)
     n <= 1 && return float(eltype(coefs))[;;] # 0×0 case (no roots)
     iszero(coefs[end]) && throw(ArgumentError("trailing coefficient must be nonzero"))
@@ -27,19 +27,61 @@ function _colleague_matrix(coefs::AbstractVector{<:Real})
     end
 end
 
+function _colleague_matrix(coefs::AbstractVector{<:Number}, lb::Real, ub::Real)
+    C = _colleague_matrix(coefs)
+    # scale and shift from [-1,1] to [lb,ub] via C * (ub-lb)/2 + (ub+lb)/2 * I
+    C .*= (ub - lb)/2
+    diagview(C) .+= (ub + lb)/2
+    return C
+end
+
 """
-    colleague_matrix(c::ChebPoly{1,<:Real}; tol=5eps)
+    colleague_matrix(c::ChebPoly{1,<:Number}; tol=5eps)
 
 Return the "colleague matrix" whose eigenvalues are the roots of the 1d real-valued
 Chebyshev polynomial `c`, dropping trailing coefficients whose relative contributions
 are `< tol` (defaulting to 5 × floating-point `eps`).
 """
-function colleague_matrix(c::ChebPoly{1,<:Real}; tol::Real=5*epsvals(c.coefs))
-    abstol = sum(infnorm, c.coefs) * tol # absolute tolerance = L1 norm * tol
-    n = something(findlast(c -> infnorm(c) ≥ abstol, c.coefs), 1)
-    C = _colleague_matrix(@view c.coefs[1:n])
-    # scale and shift from [-1,1] to [lb,ub] via C * (ub-lb)/2 + (ub+lb)/2 * I
-    C .*= (c.ub[1] - c.lb[1])/2
-    diagview(C) .+= (c.ub[1] + c.lb[1])/2
-    return C
+function colleague_matrix(c::ChebPoly{1,<:Number}; tol::Real=5*epsvals(c.coefs))
+    abstol = sum(abs, c.coefs) * tol # absolute tolerance = L1 norm * tol
+    n = something(findlast(c -> abs(c) ≥ abstol, c.coefs), 1)
+    return UpperHessenberg(_colleague_matrix(@view(c.coefs[1:n]), c.lb[1], c.ub[1]))
+end
+
+function filter_roots(c::ChebPoly{1,<:Real}, roots::AbstractVector{<:Number})
+    @inbounds lb, ub = c.lb[1], c.ub[1]
+    htol = eps(float(ub - lb)) * 100 # similar to chebfun
+    return [ clamp(real(r), lb, ub) for r in roots if abs(imag(r)) < htol && lb - htol <= real(r) <= ub + htol ]
+end
+
+if isdefined(LinearAlgebra.LAPACK, :hseqr!)
+    # see also LinearAlgebra.jl#1557 - optimized in-place eigenvalues for upper-Hessenberg colleague matrix
+    function hesseneigvals!(C::UpperHessenberg{T,Matrix{T}}) where {T<:Union{LinearAlgebra.BlasReal, LinearAlgebra.BlasComplex}}
+        ilo, ihi, _ = LinearAlgebra.LAPACK.gebal!('S', triu!(C.data, -1))
+        return sort!(LinearAlgebra.LAPACK.hseqr!('E', 'N', 1, size(C,1), C.data, C.data)[3], by=reim)
+    end
+end
+hesseneigvals!(C::UpperHessenberg{T,Matrix{T}}) where {T} = eigvals!(C.data)
+
+function roots(c::ChebPoly{1,<:Real}; tol::Real=5*epsvals(c.coefs), maxsize::Integer=50)
+    tol > 0 || throw(ArgumentError("tolerance $tol for truncating coefficients must be > 0"))
+    abstol = sum(abs, c.coefs) * tol # absolute tolerance = L1 norm * tol
+    n = something(findlast(c -> abs(c) ≥ abstol, c.coefs), 1)
+    if n <= maxsize
+        λ = hesseneigvals!(UpperHessenberg(_colleague_matrix(@view c.coefs[1:n])))
+        λ .= (λ .+ 1) .* ((c.ub[1] - c.lb[1])/2) .+ c.lb[1] # scale and shift to [lb,ub]
+        return filter_roots(c, λ)
+    else
+        # roughly halve the domain, constructing new Chebyshev polynomials on each half, and
+        # call roots recursively.  as for chebfun, we split at an arbitrary point 0.004849834917525
+        # on [-1,1] rather than at 0 to avoid introducing additional spurious roots (since 0 is
+        # often a special point by symmetry).
+        split = oftype(tol, 1.004849834917525) * ((c.ub[1] - c.lb[1])/2) + c.lb[1]
+
+        # pick a fast order for the recursive DCT, should be highly composite, say 2^m
+        order = nextpow(2, length(c.coefs)-1)
+        c1 = chebinterp(c, order, c.lb[1], split; tol=tol)
+        c2 = chebinterp(c, order, split, c.ub[1]; tol=tol)
+        return vcat(roots(c1; tol=2tol, maxsize=maxsize), roots(c2; tol=2tol, maxsize=maxsize))
+    end
 end
