@@ -58,6 +58,7 @@ Base.zero(c::ChebPoly{N,T,Td}) where {N,T,Td} = ChebPoly{N,T,Td}(zero(c.coefs), 
 include("interp.jl")
 include("regression.jl")
 include("eval.jl")
+include("roots.jl")
 include("chainrules.jl")
 
 end # module
