@@ -8,19 +8,23 @@
 using LinearAlgebra
 export colleague_matrix
 
-# colleague matrix for 1d array of coefficients, assuming
-# length > 2 and trailing zero coefficients have already been dropped.
+# colleague matrix for 1d array of Chebyshev coefficients, assuming
+# trailing zero coefficients have already been dropped.
 function _colleague_matrix(coefs::AbstractVector{<:Real})
     n = length(coefs)
-    n > 2 || throw(ArgumentError("length(coefs) = $(length(coefs)) must be > 2"))
+    n <= 1 && return float(eltype(coefs))[;;] # 0×0 case (no roots)
     iszero(coefs[end]) && throw(ArgumentError("trailing coefficient must be nonzero"))
 
-    # colleage matrix, transposed to make it upper-Hessenberg (which doesn't change eigenvalues)
-    halves = fill(one(eltype(coefs))/2, n-2)
-    C = diagm(1 => halves, -1 => halves)
-    C[2,1] = 1
-    @views C[:,end] .-= coefs[1:end-1] ./ 2coefs[end]
-    return C
+    if n == 2 # trivial 1×1 (degree 1) case
+        return [float(-coefs[1])/coefs[2];;]
+    else
+        # colleague matrix, transposed to make it upper-Hessenberg (which doesn't change eigenvalues)
+        halves = fill(one(float(eltype(coefs)))/2, n-2)
+        C = diagm(1 => halves, -1 => halves)
+        C[2,1] = 1
+        @views C[:,end] .-= coefs[1:end-1] ./ 2coefs[end]
+        return C
+    end
 end
 
 """
@@ -28,8 +32,7 @@ end
 
 Return the "colleague matrix" whose eigenvalues are the roots of the 1d real-valued
 Chebyshev polynomial `c`, dropping trailing coefficients whose relative contributions
-are `< tol` (defaulting to 5 × floating-point `eps`).   Throws an error if the resulting
-polynomial degree is less than 2.
+are `< tol` (defaulting to 5 × floating-point `eps`).
 """
 function colleague_matrix(c::ChebPoly{1,<:Real}; tol::Real=5*epsvals(c.coefs))
     abstol = sum(infnorm, c.coefs) * tol # absolute tolerance = L1 norm * tol
