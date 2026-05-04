@@ -169,3 +169,11 @@ end
     @inferred FastChebInterp.droptol(rand(5,5), 0.0)
     @inferred chebinterp(rand(5,5), (0,0), (1,1))
 end
+
+# https://github.com/JuliaMath/FastChebInterp.jl/issues/36
+@testset "boundscheck sensitivity with fastmath" begin
+    x = chebpoints(50, 1.0, 100.0)
+    c = chebinterp(sin.(x), 1.0, 100.0)
+    @test all([c(100.0)] .== map(c, [100.0]))
+    @test all([c(100.0)] .≈  c.([100.0]))
+end
